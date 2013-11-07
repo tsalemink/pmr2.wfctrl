@@ -1,0 +1,15 @@
+/bin
+/build
+/buildout-cache
+/dist
+/develop-eggs
+/eggs
+/htmlcov
+/parts
+*.egg-info
+*.py[co]
+.*.swp
+*.mo
+.coverage
+.env
+.installed.cfg
