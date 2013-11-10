@@ -1,20 +1,17 @@
 from unittest import TestCase
 
 import os
+from os.path import join
 import tempfile
 import shutil
 
 from pmr.wfctrl.core import Workspace
 
+from pmr.wfctrl.testing.base import CoreTestCase
+from pmr.wfctrl.testing.base import CoreTests
 
-class CoreTestCase(TestCase):
 
-    def setUp(self):
-        self.working_dir = tempfile.mkdtemp()
+class FileWorkspaceTestCase(CoreTestCase, CoreTests):
 
-    def tearDown(self):
-        shutil.rmtree(self.working_dir)
-
-    def test_create_workspace(self):
-        wks = Workspace(self.working_dir)
-        self.assertTrue(os.path.exists(self.working_dir))
+    def make_workspace(self):
+        return Workspace(self.workspace_dir)
