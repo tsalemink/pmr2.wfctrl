@@ -31,6 +31,7 @@ class BaseCmdTestCase(TestCase):
 
 
 class BaseDvcsCmdTestCase(TestCase):
+
     def test_dvcs_cmd_binary(self):
         self.assertFalse(BaseDvcsCmd.available())
         self.assertRaises(ValueError, BaseDvcsCmd)
@@ -44,6 +45,7 @@ class BaseDvcsCmdTestCase(TestCase):
         self.assertTrue(isinstance(vcs, BaseDvcsCmd))
         # (stdout, stderr)
         self.assertEqual(len(vcs.execute()), 2)
+
 
 class BaseWorkspaceTestCase(TestCase):
 
@@ -70,14 +72,31 @@ class BareCmdWorkspaceTestCase(CoreTestCase, CoreTests):
         os.mkdir(join(self.workspace_dir, self.wks_marker))
         return CmdWorkspace(self.workspace_dir, self.wks_marker)
 
-    def test_no_marker(self):
-        self.assertRaises(AssertionError, CmdWorkspace, self.workspace_dir)
-
     def test_cmd_workspace(self):
+        result = []
         def init(*a, **kw):
-            pass
+            result.append('called')
         save = object()
         wks = CmdWorkspace(self.workspace_dir, self.wks_marker,
             cmd_table={'init': init, 'save': save})
 
+        self.assertEqual(result, ['called'])
         self.assertEqual(wks.cmd_table, {'init': init, 'save': save})
+
+    def test_cmd_workspace_already_inited(self):
+        result = []
+        def init(*a, **kw):
+            result.append('called')
+        os.mkdir(join(self.workspace_dir, self.wks_marker))
+        wks = CmdWorkspace(self.workspace_dir, self.wks_marker,
+            cmd_table={'init': init})
+
+        self.assertEqual(result, [])
+
+    def test_cmd_workspace_no_marker_no_init(self):
+        result = []
+        def init(*a, **kw):
+            result.append('called')
+        wks = CmdWorkspace(self.workspace_dir, None,
+            cmd_table={'init': init})
+        self.assertEqual(result, [])

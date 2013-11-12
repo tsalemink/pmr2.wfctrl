@@ -83,8 +83,6 @@ class CmdWorkspace(BaseWorkspace):
             - save
         """
 
-        assert marker is not None
-
         BaseWorkspace.__init__(self, working_dir)
         self.cmd_table = {}
         if cmd_table:
@@ -100,6 +98,8 @@ class CmdWorkspace(BaseWorkspace):
         return cmd
 
     def check_marker(self):
+        if self.marker is None:
+            return True
         target = join(self.working_dir, self.marker)
         logger.debug('checking isdir: %s', target)
         return isdir(target)
@@ -124,6 +124,8 @@ class BaseCmd(object):
 
     For providing external command encapsulation.
     """
+
+    marker = None
 
     def __init__(self, **kw):
         pass
