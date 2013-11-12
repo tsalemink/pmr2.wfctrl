@@ -43,10 +43,8 @@ class BaseWorkspace(object):
 
         if not filename.startswith(self.working_dir):
             raise ValueError('filename not inside working dir')
-        # get the relative path, stripping out working dir + separator
-        relname = filename[len(self.working_dir) + 1:]
 
-        self.files.add(relname)
+        self.files.add(filename)
 
     def get_tracked_subpaths(self):
         return sorted(list(self.files))

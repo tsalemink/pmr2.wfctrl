@@ -112,7 +112,7 @@ class DemoVcsCmdWorkspaceTestCase(CoreTestCase, CoreTests):
         filename = self.add_files_simple(wks)
         wks.save()
         self.assertEqual(self.cmd.queue, [
-            ['vcs', 'add', os.path.basename(filename)],
+            ['vcs', 'add', filename],
             ['vcs', 'commit', '-m', ''],
             ['vcs', 'push'],
         ])
