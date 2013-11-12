@@ -34,6 +34,27 @@ class MercurialDvcsCmd(BaseDvcsCmd):
     name = 'mercurial'
     marker = '.hg'
 
+    def _args(self, workspace, *args):
+        result = ['-R', workspace.working_dir]
+        result.extend(args)
+        return result
+
+    def clone(self, workspace, **kw):
+        return self.execute('clone', self.remote, workspace.working_dir)
+
+    def init_new(self, workspace, **kw):
+        return self.execute('init', workspace.working_dir)
+
+    def add(self, workspace, path, **kw):
+        return self.execute(*self._args(workspace, 'add', path))
+
+    def commit(self, workspace, message, **kw):
+        # XXX need to customize the user name
+        return self.execute(*self._args(workspace, 'commit', '-m', message))
+
+    def push(self, workspace, branches=None, **kw):
+        pass
+
 
 class GitDvcsCmd(BaseDvcsCmd):
 
@@ -58,6 +79,7 @@ class GitDvcsCmd(BaseDvcsCmd):
         return self.execute(*self._args(workspace, 'add', path))
 
     def commit(self, workspace, message, **kw):
+        # XXX need to customize the user name
         return self.execute(*self._args(workspace, 'commit', '-m', message))
 
     def push(self, workspace, branches=None, **kw):

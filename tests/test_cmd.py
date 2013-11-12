@@ -7,6 +7,7 @@ import shutil
 
 from pmr.wfctrl.core import CmdWorkspace
 from pmr.wfctrl.cmd import GitDvcsCmd
+from pmr.wfctrl.cmd import MercurialDvcsCmd
 
 from pmr.wfctrl.testing.base import CoreTestCase
 from pmr.wfctrl.testing.base import CoreTests
@@ -79,6 +80,30 @@ class GitDvcsCmdTestCase(CoreTestCase, RawCmdTests):
 
         stdout, stderr = GitDvcsCmd._execute(
             self.cmd._args(self.workspace, 'ls-tree', 'master'))
+
+        for fn in files:
+            self.assertTrue(basename(fn) in stdout)
+
+
+@skipIf(not MercurialDvcsCmd.available(), 'mercurial is not available')
+class MercurialDvcsCmdTestCase(CoreTestCase, RawCmdTests):
+
+    marker = '.hg'
+    cmdcls = MercurialDvcsCmd
+
+    def setUp(self):
+        super(MercurialDvcsCmdTestCase, self).setUp()
+        self.cmd = MercurialDvcsCmd()
+        self.workspace = CmdWorkspace(self.workspace_dir, self.cmd.marker,
+            cmd_table=self.cmd.cmd_table)
+
+    def check_commit(self, message, files):
+        stdout, stderr = MercurialDvcsCmd._execute(
+            self.cmd._args(self.workspace, 'log'))
+        self.assertTrue(message in stdout)
+
+        stdout, stderr = MercurialDvcsCmd._execute(
+            self.cmd._args(self.workspace, 'manifest'))
 
         for fn in files:
             self.assertTrue(basename(fn) in stdout)
