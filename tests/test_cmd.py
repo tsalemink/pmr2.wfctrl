@@ -60,6 +60,21 @@ class RawCmdTests(object):
             committer='Tester <test@example.com>')
 
     def check_commit(self, files, message=None, committer=None):
+        stdout, stderr = self._call(self._log)
+        self.assertTrue(message in stdout)
+        self.assertTrue(committer in stdout)
+        stdout, stderr = self._call(self._ls_root)
+        for fn in files:
+            self.assertTrue(basename(fn) in stdout)
+
+    def _call(self, f, a=(), kw={}, codec='latin1'):
+        stdout, stderr = f(*a, **kw)
+        return stdout.decode(codec), stderr.decode(codec)
+
+    def _log(self):
+        raise NotImplementedError
+
+    def _ls_root(self):
         raise NotImplementedError
 
 
@@ -75,17 +90,12 @@ class GitDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         self.workspace = CmdWorkspace(self.workspace_dir, self.cmd.marker,
             cmd_table=self.cmd.cmd_table)
 
-    def check_commit(self, files, message=None, committer=None):
-        stdout, stderr = GitDvcsCmd._execute(
-            self.cmd._args(self.workspace, 'log'))
-        self.assertTrue(message in stdout)
-        self.assertTrue(committer in stdout)
+    def _log(self):
+        return GitDvcsCmd._execute(self.cmd._args(self.workspace, 'log'))
 
-        stdout, stderr = GitDvcsCmd._execute(
+    def _ls_root(self):
+        return GitDvcsCmd._execute(
             self.cmd._args(self.workspace, 'ls-tree', 'master'))
-
-        for fn in files:
-            self.assertTrue(basename(fn) in stdout)
 
 
 @skipIf(not MercurialDvcsCmd.available(), 'mercurial is not available')
@@ -100,14 +110,9 @@ class MercurialDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         self.workspace = CmdWorkspace(self.workspace_dir, self.cmd.marker,
             cmd_table=self.cmd.cmd_table)
 
-    def check_commit(self, files, message=None, committer=None):
-        stdout, stderr = MercurialDvcsCmd._execute(
-            self.cmd._args(self.workspace, 'log'))
-        self.assertTrue(message in stdout)
-        self.assertTrue(committer in stdout)
+    def _log(self):
+        return MercurialDvcsCmd._execute(self.cmd._args(self.workspace, 'log'))
 
-        stdout, stderr = MercurialDvcsCmd._execute(
+    def _ls_root(self):
+        return MercurialDvcsCmd._execute(
             self.cmd._args(self.workspace, 'manifest'))
-
-        for fn in files:
-            self.assertTrue(basename(fn) in stdout)
