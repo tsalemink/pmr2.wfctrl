@@ -130,6 +130,9 @@ class BaseCmd(object):
     def __init__(self, **kw):
         pass
 
+    def set_committer(self, name, email, **kw):
+        raise NotImplementedError
+
     def init(self, workspace, **kw):
         raise NotImplementedError
 
@@ -169,7 +172,7 @@ class BaseDvcsCmd(BaseCmd):
         if not args:
             args = []
         cmdargs = [cmd_binary]
-        cmdargs.extend(list(args))
+        cmdargs.extend(args)
         p = Popen(cmdargs, stdin=PIPE, stdout=PIPE, stderr=PIPE)
         return p.communicate()
 

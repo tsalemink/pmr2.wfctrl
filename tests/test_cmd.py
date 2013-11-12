@@ -54,10 +54,12 @@ class RawCmdTests(object):
         helper.workspace_dir = self.workspace_dir
         files = helper.add_files_multi(self.workspace)
         message = 'initial commit'
+        self.cmd.set_committer('Tester', 'test@example.com')
         self.workspace.save(message=message)
-        self.check_commit(message, files)
+        self.check_commit(files, message=message,
+            committer='Tester <test@example.com>')
 
-    def check_commit(self,  message, files):
+    def check_commit(self, files, message=None, committer=None):
         raise NotImplementedError
 
 
@@ -73,10 +75,11 @@ class GitDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         self.workspace = CmdWorkspace(self.workspace_dir, self.cmd.marker,
             cmd_table=self.cmd.cmd_table)
 
-    def check_commit(self, message, files):
+    def check_commit(self, files, message=None, committer=None):
         stdout, stderr = GitDvcsCmd._execute(
             self.cmd._args(self.workspace, 'log'))
         self.assertTrue(message in stdout)
+        self.assertTrue(committer in stdout)
 
         stdout, stderr = GitDvcsCmd._execute(
             self.cmd._args(self.workspace, 'ls-tree', 'master'))
@@ -97,10 +100,11 @@ class MercurialDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         self.workspace = CmdWorkspace(self.workspace_dir, self.cmd.marker,
             cmd_table=self.cmd.cmd_table)
 
-    def check_commit(self, message, files):
+    def check_commit(self, files, message=None, committer=None):
         stdout, stderr = MercurialDvcsCmd._execute(
             self.cmd._args(self.workspace, 'log'))
         self.assertTrue(message in stdout)
+        self.assertTrue(committer in stdout)
 
         stdout, stderr = MercurialDvcsCmd._execute(
             self.cmd._args(self.workspace, 'manifest'))
