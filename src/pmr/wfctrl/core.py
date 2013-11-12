@@ -23,7 +23,7 @@ class BaseWorkspace(object):
     def reset(self):
         self.files = set()
 
-    def initialize(self):
+    def initialize(self, **kw):
         # Unused here.
         raise NotImplementedError
 
@@ -105,15 +105,75 @@ class CmdWorkspace(BaseWorkspace):
         logger.debug('checking isdir: %s', target)
         return isdir(target)
 
-    def initialize(self):
+    def initialize(self, **kw):
         if self.check_marker():
             logger.debug('already initialized: %s', self.working_dir)
             return
-        return self.get_cmd('init')(self)
+        return self.get_cmd('init')(self, **kw)
 
     def save(self, **kw):
         """
         They are already on filesystem, do nothing.
         """
 
-        return self.get_cmd('save')(self)
+        return self.get_cmd('save')(self, **kw)
+
+
+class BaseCmd(object):
+    """
+    Base command module
+
+    For providing external command encapsulation.
+    """
+
+    def __init__(self, **kw):
+        pass
+
+    def init(self, workspace, **kw):
+        raise NotImplementedError
+
+    def save(self, workspace, **kw):
+        raise NotImplementedError
+
+    @property
+    def cmd_table(self):
+        return {
+            'init': self.init,
+            'save': self.save,
+        }
+
+
+class BaseDvcsCmd(BaseCmd):
+    """
+    Base DVCS based command.
+    """
+
+    def __init__(self, remote=None):
+        self.remote = remote
+
+    def init(self, workspace, **kw):
+        if self.remote:
+            self.clone(workspace)
+        else:
+            self.init_new(workspace)
+
+    def save(self, workspace, message='', **kw):
+        for path in workspace.get_tracked_subpaths():
+            self.add(workspace, path)
+        self.commit(workspace, message)
+        self.push(workspace)
+
+    def clone(self, workspace, **kw):
+        raise NotImplementedError
+
+    def init_new(self, workspace, **kw):
+        raise NotImplementedError
+
+    def add(self, workspace, path, **kw):
+        raise NotImplementedError
+
+    def commit(self, workspace, message, **kw):
+        raise NotImplementedError
+
+    def push(self, workspace, **kw):
+        raise NotImplementedError
