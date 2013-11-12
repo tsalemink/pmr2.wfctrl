@@ -168,8 +168,9 @@ class BaseDvcsCmd(BaseCmd):
             cmd_binary = cls.cmd_binary
         if not args:
             args = []
-        p = Popen([cmd_binary] + args,
-            stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        cmdargs = [cmd_binary]
+        cmdargs.extend(list(args))
+        p = Popen(cmdargs, stdin=PIPE, stdout=PIPE, stderr=PIPE)
         return p.communicate()
 
     # public class method because this is useful before class is
