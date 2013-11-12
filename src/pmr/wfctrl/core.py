@@ -1,6 +1,7 @@
 import os
 from os.path import abspath, isabs, isdir, join, normpath, relpath
 import logging
+from subprocess import Popen, PIPE
 
 logger = logging.getLogger(__name__)
 
@@ -146,8 +147,59 @@ class BaseDvcsCmd(BaseCmd):
     Base DVCS based command.
     """
 
-    def __init__(self, remote=None):
+    name = '__base__'
+    cmd_binary = None
+
+    def __init__(self, remote=None, cmd_binary=None):
         self.remote = remote
+        if cmd_binary:
+            self.cmd_binary = cmd_binary
+        if not self._available():
+            raise ValueError('the %s cmd_binary `%s` is not available' % 
+                (self.name, cmd_binary))
+
+    # class method private because this is used only with the class
+    # version of the available.
+    @classmethod
+    def _execute(cls, args=None, cmd_binary=None):
+        if not cmd_binary:
+            cmd_binary = cls.cmd_binary
+        if not args:
+            args = []
+        p = Popen([cmd_binary] + args,
+            stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        return p.communicate()
+
+    # public class method because this is useful before class is
+    # instantiated.
+    @classmethod
+    def available(cls, cmd_binary=None):
+        """
+        Class method that reports whether the command binary is
+        available.
+        """
+
+        if cmd_binary is None:
+            cmd_binary = cls.cmd_binary
+        if not cmd_binary:
+            return False
+        try:
+            cls._execute(cmd_binary=cmd_binary)
+        except OSError:
+            return False
+        return True
+
+    # private as instance method because only startup needs this
+    def _available(self):
+        return self.available(cmd_binary=self.cmd_binary)
+
+    # public instance method because instances always execute this.
+    def execute(self, *args):
+        """
+        Executes an external command.
+        """
+
+        return self._execute(args=args, cmd_binary=self.cmd_binary)
 
     def init(self, workspace, **kw):
         if self.remote:

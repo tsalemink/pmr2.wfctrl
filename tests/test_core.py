@@ -30,6 +30,21 @@ class BaseCmdTestCase(TestCase):
         self.assertRaises(NotImplementedError, cmd.save, workspace)
 
 
+class BaseDvcsCmdTestCase(TestCase):
+    def test_dvcs_cmd_binary(self):
+        self.assertFalse(BaseDvcsCmd.available())
+        self.assertRaises(ValueError, BaseDvcsCmd)
+        self.assertRaises(ValueError, BaseDvcsCmd, cmd_binary='__bad_cmd')
+        # assuming this command is available on all systems.
+        self.assertTrue(BaseDvcsCmd.available('python'))
+        self.assertFalse(BaseDvcsCmd.available('__bad_cmd_'))
+
+        # Pretend we have a binary here too
+        vcs = BaseDvcsCmd(cmd_binary='python')
+        self.assertTrue(isinstance(vcs, BaseDvcsCmd))
+        # (stdout, stderr)
+        self.assertEqual(len(vcs.execute()), 2)
+
 class BaseWorkspaceTestCase(TestCase):
 
     def setUp(self):
