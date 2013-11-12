@@ -1,18 +1,35 @@
 import os
-from os.path import abspath, isabs, normpath, relpath
+from os.path import abspath, isabs, isdir, join, normpath, relpath
+import logging
+
+logger = logging.getLogger(__name__)
+
+def dummy_action(workspace):
+    return
 
 
-class WorkspaceBase(object):
+class BaseWorkspace(object):
     """
     Base workspace object
     """
 
-    def __init__(self, working_dir):
+    marker = None
+    files = None
+
+    def __init__(self, working_dir, **kw):
         self.working_dir = abspath(normpath(working_dir))
         self.reset()
 
     def reset(self):
         self.files = set()
+
+    def initialize(self):
+        # Unused here.
+        raise NotImplementedError
+
+    def check_marker(self):
+        # Unused here.
+        raise NotImplementedError
 
     def add_file(self, filename):
         """
@@ -34,18 +51,69 @@ class WorkspaceBase(object):
     def get_tracked_subpaths(self):
         return sorted(list(self.files))
 
-    def save(self):
+    def save(self, **kw):
         raise NotImplementedError
 
 
-class Workspace(WorkspaceBase):
+class Workspace(BaseWorkspace):
     """
     Default workspace, file based.
     """
 
-    def save(self):
+    def save(self, **kw):
         """
         They are already on filesystem, do nothing.
         """
 
-        return
+
+class CmdWorkspace(BaseWorkspace):
+    """
+    Default workspace, file based.
+    """
+
+    def __init__(self, working_dir, marker=None, cmd_table=None, **kw):
+        """
+        marker
+            The marker path that denotes that this was already
+            initialized.
+        cmd_table
+            A dictionary of callable objects that will be used for
+            certain situations.  Keys are:
+
+            - init
+            - save
+        """
+
+        assert marker is not None
+
+        BaseWorkspace.__init__(self, working_dir)
+        self.cmd_table = {}
+        if cmd_table:
+            self.cmd_table.update(cmd_table)
+        self.marker = marker
+        self.initialize()
+
+    def get_cmd(self, name):
+        cmd = self.cmd_table.get(name)
+        if not cmd:
+            logger.info('%s required but no init defined', name)
+            return dummy_action
+        return cmd
+
+    def check_marker(self):
+        target = join(self.working_dir, self.marker)
+        logger.debug('checking isdir: %s', target)
+        return isdir(target)
+
+    def initialize(self):
+        if self.check_marker():
+            logger.debug('already initialized: %s', self.working_dir)
+            return
+        return self.get_cmd('init')(self)
+
+    def save(self, **kw):
+        """
+        They are already on filesystem, do nothing.
+        """
+
+        return self.get_cmd('save')(self)
