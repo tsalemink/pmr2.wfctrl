@@ -28,6 +28,7 @@ class BaseCmdTestCase(TestCase):
         self.assertEqual(cmd.cmd_table['save'], cmd.save)
         self.assertRaises(NotImplementedError, cmd.init, workspace)
         self.assertRaises(NotImplementedError, cmd.save, workspace)
+        self.assertRaises(NotImplementedError, cmd.set_committer, '', '')
 
 
 class BaseDvcsCmdTestCase(TestCase):
@@ -45,6 +46,16 @@ class BaseDvcsCmdTestCase(TestCase):
         self.assertTrue(isinstance(vcs, BaseDvcsCmd))
         # (stdout, stderr)
         self.assertEqual(len(vcs.execute()), 2)
+
+    def test_dvcs_default_fails(self):
+        cmd = BaseDvcsCmd(cmd_binary='python')
+        workspace = None
+        self.assertRaises(NotImplementedError, cmd.clone, workspace)
+        self.assertRaises(NotImplementedError, cmd.init_new, workspace)
+        self.assertRaises(NotImplementedError, cmd.add, workspace, '')
+        self.assertRaises(NotImplementedError, cmd.commit, workspace, '')
+        self.assertRaises(NotImplementedError, cmd.update_remote, workspace)
+        self.assertRaises(NotImplementedError, cmd.push, workspace)
 
 
 class BaseWorkspaceTestCase(TestCase):

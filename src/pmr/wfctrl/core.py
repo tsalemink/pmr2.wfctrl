@@ -161,6 +161,7 @@ class BaseDvcsCmd(BaseCmd):
 
     name = '__base__'
     cmd_binary = None
+    auto_push = True
 
     def __init__(self, remote=None, cmd_binary=None):
         self.remote = remote
@@ -224,6 +225,7 @@ class BaseDvcsCmd(BaseCmd):
         for path in workspace.get_tracked_subpaths():
             self.add(workspace, path)
         self.commit(workspace, message)
+        self.update_remote(workspace)
         self.push(workspace)
 
     def clone(self, workspace, **kw):
@@ -236,6 +238,9 @@ class BaseDvcsCmd(BaseCmd):
         raise NotImplementedError
 
     def commit(self, workspace, message, **kw):
+        raise NotImplementedError
+
+    def update_remote(self, workspace, **kw):
         raise NotImplementedError
 
     def push(self, workspace, **kw):

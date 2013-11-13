@@ -71,11 +71,30 @@ class RawCmdTests(object):
         stdout, stderr = f(*a, **kw)
         return stdout.decode(codec), stderr.decode(codec)
 
-    def _log(self):
-        raise NotImplementedError
+    def test_push_remote(self):
+        self.cmd.init_new(self.workspace)
+        helper = CoreTests()
+        helper.workspace_dir = self.workspace_dir
+        self.cmd.set_committer('Tester', 'test@example.com')
 
-    def _ls_root(self):
-        raise NotImplementedError
+        files = helper.add_files_nested(self.workspace)
+        self.workspace.save(message='nested files')
+
+        # define a remote
+        remote = self._make_remote()
+        self.cmd.remote = remote
+
+        # add a file, using relative path
+        fn = helper.write_file('Test content')
+        self.workspace.add_file(basename(fn))
+        # make a commit, which should now push.
+        self.workspace.save(message='single file')
+
+        # Instantiate the remote for checking
+        new_workspace = CmdWorkspace(remote, self.cmdcls())
+        stdout, stderr = self._call(self._log, (new_workspace,))
+        self.assertTrue('nested files' in stdout)
+        self.assertTrue('single file' in stdout)
 
 
 @skipIf(not GitDvcsCmd.available(), 'git is not available')
@@ -88,12 +107,40 @@ class GitDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         self.cmd = GitDvcsCmd()
         self.workspace = CmdWorkspace(self.workspace_dir, self.cmd)
 
-    def _log(self):
+    def _log(self, workspace=None):
         return GitDvcsCmd._execute(self.cmd._args(self.workspace, 'log'))
 
-    def _ls_root(self):
+    def _ls_root(self, workspace=None):
         return GitDvcsCmd._execute(
             self.cmd._args(self.workspace, 'ls-tree', 'master'))
+
+    def _make_remote(self):
+        target = os.path.join(self.working_dir, 'remote')
+        GitDvcsCmd._execute(['init', target, '--bare'])
+        return target
+
+    def test_update_remote(self):
+        self.assertTrue(self.cmd.remote is None)
+        target = 'http://example.com/git'
+        self.cmd.remote = target
+        self.cmd.update_remote(self.workspace)
+        self.assertEqual(self.cmd.remote,
+            self.cmd._get_current_origin(self.workspace))
+        # nothing should be done here
+        self.cmd.update_remote(self.workspace)
+
+        # command not tracking any remote
+        self.cmd.remote = None
+        self.cmd.update_remote(self.workspace)
+        # should be loaded from stored
+        self.assertEqual(self.cmd.remote, target)
+
+        # command has a defined remote
+        new_target = self.cmd.remote = 'http://new.example.com/git'
+        self.cmd.update_remote(self.workspace)
+        # should be set to a new one and can be loaded.
+        self.assertEqual(new_target,
+            self.cmd._get_current_origin(self.workspace))
 
 
 @skipIf(not MercurialDvcsCmd.available(), 'mercurial is not available')
@@ -106,9 +153,37 @@ class MercurialDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         self.cmd = MercurialDvcsCmd()
         self.workspace = CmdWorkspace(self.workspace_dir, self.cmd)
 
-    def _log(self):
+    def _log(self, workspace=None):
         return MercurialDvcsCmd._execute(self.cmd._args(self.workspace, 'log'))
 
-    def _ls_root(self):
+    def _ls_root(self, workspace=None):
         return MercurialDvcsCmd._execute(
             self.cmd._args(self.workspace, 'manifest'))
+
+    def _make_remote(self):
+        target = os.path.join(self.working_dir, 'remote')
+        MercurialDvcsCmd._execute(['init', target])
+        return target
+
+    def test_update_remote(self):
+        self.assertTrue(self.cmd.remote is None)
+        target = 'http://example.com/hg'
+        self.cmd.remote = target
+        self.cmd.update_remote(self.workspace)
+        self.assertEqual(self.cmd.remote,
+            self.cmd._get_current_origin(self.workspace))
+        # nothing should be done here
+        self.cmd.update_remote(self.workspace)
+
+        # command not tracking any remote
+        self.cmd.remote = None
+        self.cmd.update_remote(self.workspace)
+        # should be loaded from stored
+        self.assertEqual(self.cmd.remote, target)
+
+        # command has a defined remote
+        new_target = self.cmd.remote = 'http://new.example.com/hg'
+        self.cmd.update_remote(self.workspace)
+        # should be set to a new one and can be loaded.
+        self.assertEqual(new_target,
+            self.cmd._get_current_origin(self.workspace))
