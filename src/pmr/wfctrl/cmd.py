@@ -157,7 +157,7 @@ class GitDvcsCmd(BaseDvcsCmd):
         stdout, err = self.execute(*self._args(workspace, 'remote', '-v'))
         if stdout:
             for lines in stdout.splitlines():
-                remotes = lines.split()
+                remotes = lines.decode('utf8', errors='replace').split()
                 if remotes[0] == self._default_remote_name:
                     # XXX assuming first one is correct
                     return remotes[1]
