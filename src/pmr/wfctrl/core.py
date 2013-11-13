@@ -70,7 +70,7 @@ class CmdWorkspace(BaseWorkspace):
     Default workspace, file based.
     """
 
-    def __init__(self, working_dir, marker=None, cmd_table=None, **kw):
+    def __init__(self, working_dir, cmd=None, **kw):
         """
         marker
             The marker path that denotes that this was already
@@ -84,11 +84,14 @@ class CmdWorkspace(BaseWorkspace):
         """
 
         BaseWorkspace.__init__(self, working_dir)
-        self.cmd_table = {}
-        if cmd_table:
-            self.cmd_table.update(cmd_table)
-        self.marker = marker
+        self.cmd = cmd
+        self.update_cmd_table(cmd)
         self.initialize()
+
+    def update_cmd_table(self, cmd):
+        self.cmd_table = {}
+        if cmd:
+            self.cmd_table.update(cmd.cmd_table)
 
     def get_cmd(self, name):
         cmd = self.cmd_table.get(name)
@@ -96,6 +99,10 @@ class CmdWorkspace(BaseWorkspace):
             logger.info('%s required but no init defined', name)
             return dummy_action
         return cmd
+
+    @property
+    def marker(self):
+        return self.cmd and self.cmd.marker or None
 
     def check_marker(self):
         if self.marker is None:

@@ -1,11 +1,15 @@
+import logging
 from os.path import join
 
 from pmr.wfctrl.core import BaseDvcsCmd
+
+logger = logging.getLogger(__name__)
 
 
 class DemoDvcsCmd(BaseDvcsCmd):
 
     binary = 'vcs'
+    marker = '.marker'
 
     def __init__(self, remote=None, queue=None):
         self.remote = remote

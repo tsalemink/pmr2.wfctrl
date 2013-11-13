@@ -19,13 +19,11 @@ class DemoVcsCmdWorkspaceTestCase(CoreTestCase, CoreTests):
     def make_workspace(self):
         self.cmd = DemoDvcsCmd()
         os.mkdir(join(self.workspace_dir, self.wks_marker))
-        return CmdWorkspace(self.workspace_dir, self.wks_marker,
-            cmd_table=self.cmd.cmd_table)
+        return CmdWorkspace(self.workspace_dir, self.cmd)
 
     def test_cmd_new_init(self):
         self.cmd = DemoDvcsCmd()
-        wks = CmdWorkspace(self.workspace_dir, self.wks_marker,
-            cmd_table=self.cmd.cmd_table)
+        wks = CmdWorkspace(self.workspace_dir, self.cmd)
         self.assertEqual(self.cmd.queue, [
             ['vcs', 'init', self.workspace_dir],
         ])
@@ -33,8 +31,7 @@ class DemoVcsCmdWorkspaceTestCase(CoreTestCase, CoreTests):
     def test_cmd_new_clone(self):
         remote = 'http://example.com'
         self.cmd = DemoDvcsCmd(remote=remote)
-        wks = CmdWorkspace(self.workspace_dir, self.wks_marker,
-            cmd_table=self.cmd.cmd_table)
+        wks = CmdWorkspace(self.workspace_dir, self.cmd)
         self.assertEqual(self.cmd.queue, [
             ['vcs', 'clone', remote, self.workspace_dir],
         ])
@@ -42,8 +39,7 @@ class DemoVcsCmdWorkspaceTestCase(CoreTestCase, CoreTests):
         # emulate that creation, which our mocks don't do.
         os.mkdir(join(self.workspace_dir, self.wks_marker))
         self.cmd = DemoDvcsCmd(remote=remote)
-        wks = CmdWorkspace(self.workspace_dir, self.wks_marker,
-            cmd_table=self.cmd.cmd_table)
+        wks = CmdWorkspace(self.workspace_dir, self.cmd)
         # nothing.
         self.assertEqual(self.cmd.queue, [])
 

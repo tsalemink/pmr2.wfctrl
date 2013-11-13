@@ -64,39 +64,36 @@ class FileWorkspaceTestCase(CoreTestCase, CoreTests):
         return Workspace(self.workspace_dir)
 
 
+class _DummyCmd(object):
+    marker = '.marker'
+    def __init__(self):
+        self.result = []
+    def init(self, *a, **kw):
+        self.result.append('init')
+    @property
+    def cmd_table(self):
+        return {'init': self.init}
+
+
 class BareCmdWorkspaceTestCase(CoreTestCase, CoreTests):
 
-    wks_marker = '.marker'
-
     def make_workspace(self):
-        os.mkdir(join(self.workspace_dir, self.wks_marker))
-        return CmdWorkspace(self.workspace_dir, self.wks_marker)
+        os.mkdir(join(self.workspace_dir, _DummyCmd.marker))
+        return CmdWorkspace(self.workspace_dir)
 
     def test_cmd_workspace(self):
-        result = []
-        def init(*a, **kw):
-            result.append('called')
-        save = object()
-        wks = CmdWorkspace(self.workspace_dir, self.wks_marker,
-            cmd_table={'init': init, 'save': save})
-
-        self.assertEqual(result, ['called'])
-        self.assertEqual(wks.cmd_table, {'init': init, 'save': save})
+        cmd = _DummyCmd()
+        wks = CmdWorkspace(self.workspace_dir, cmd)
+        self.assertEqual(cmd.result, ['init'])
 
     def test_cmd_workspace_already_inited(self):
-        result = []
-        def init(*a, **kw):
-            result.append('called')
-        os.mkdir(join(self.workspace_dir, self.wks_marker))
-        wks = CmdWorkspace(self.workspace_dir, self.wks_marker,
-            cmd_table={'init': init})
-
-        self.assertEqual(result, [])
+        cmd = _DummyCmd()
+        os.mkdir(join(self.workspace_dir, _DummyCmd.marker))
+        wks = CmdWorkspace(self.workspace_dir, cmd)
+        self.assertEqual(cmd.result, [])
 
     def test_cmd_workspace_no_marker_no_init(self):
-        result = []
-        def init(*a, **kw):
-            result.append('called')
-        wks = CmdWorkspace(self.workspace_dir, None,
-            cmd_table={'init': init})
-        self.assertEqual(result, [])
+        cmd = _DummyCmd()
+        cmd.marker = None
+        wks = CmdWorkspace(self.workspace_dir, cmd)
+        self.assertEqual(cmd.result, [])
