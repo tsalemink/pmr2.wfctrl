@@ -48,6 +48,9 @@ class RawCmdTests(object):
         self.assertTrue(isdir(join(target, self.marker)))
         # XXX verify contents.
 
+        # of course, clone will fail.
+        self.assertRaises(Exception, self.cmd.clone, self.workspace)
+
     def test_add_files(self):
         self.cmd.init_new(self.workspace)
         helper = CoreTests()
