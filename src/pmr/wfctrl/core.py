@@ -3,6 +3,8 @@ from os.path import abspath, isabs, isdir, join, normpath, relpath
 import logging
 from subprocess import Popen, PIPE
 
+from .utils import set_url_cred
+
 logger = logging.getLogger(__name__)
 
 def dummy_action(workspace):
@@ -160,6 +162,7 @@ class BaseDvcsCmd(BaseCmd):
     """
 
     name = '__base__'
+    default_remote = None
     cmd_binary = None
     auto_push = True
 
@@ -241,14 +244,23 @@ class BaseDvcsCmd(BaseCmd):
     def commit(self, workspace, message, **kw):
         raise NotImplementedError
 
-    def read_remote(self, workspace, **kw):
+    def read_remote(self, workspace, target_remote=None, **kw):
         raise NotImplementedError
 
-    def write_remote(self, workspace, **kw):
+    def write_remote(self, workspace, target_remote=None, **kw):
         raise NotImplementedError
+
+    def get_push_target(self, workspace, 
+            target_remote=None, username=None, password=None):
+        target_remote = target_remote or self.default_remote
+        target_url = self.read_remote(workspace, target_remote=target_remote)
+        if target_url is None:
+            # XXX should we inform caller here that it's undefined?
+            return target_remote
+        return set_url_cred(target_url, username, password)
 
     def update_remote(self, workspace):
-        default_origin = self._default_remote_name
+        default_origin = self.default_remote
         stored_remote = self.read_remote(workspace)
 
         if stored_remote and self.remote:

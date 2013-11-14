@@ -11,6 +11,7 @@ else:
     from StringIO import StringIO
 
 from pmr.wfctrl.core import BaseDvcsCmd
+from pmr.wfctrl.utils import set_url_cred
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +20,8 @@ class DemoDvcsCmd(BaseDvcsCmd):
 
     binary = 'vcs'
     marker = '.marker'
+    default_remote = '__default_remote__'
+    _default_target = 'http://vcs.example.com/repo'
 
     def __init__(self, remote=None, queue=None):
         self.remote = remote
@@ -37,8 +40,11 @@ class DemoDvcsCmd(BaseDvcsCmd):
     def commit(self, workspace, message, **kw):
         self.queue.append([self.binary, 'commit', '-m', message])
 
-    def update_remote(self, workspace):
+    def update_remote(self, workspace, target_remote=None, **kw):
         pass
+
+    def read_remote(self, workspace, target_remote=None, **kw):
+        return self.remote or self._default_target
 
     def push(self, workspace, **kw):
         self.queue.append([self.binary, 'push'])
@@ -49,8 +55,8 @@ class MercurialDvcsCmd(BaseDvcsCmd):
     cmd_binary = 'hg'
     name = 'mercurial'
     marker = '.hg'
+    default_remote = 'default'
     _hgrc = 'hgrc'
-    _default_remote_name = 'default'
     committer = None
 
     def _args(self, workspace, *args):
@@ -78,26 +84,29 @@ class MercurialDvcsCmd(BaseDvcsCmd):
             cmd.extend(['-u', self.committer])
         return self.execute(*self._args(workspace, *cmd))
 
-    def read_remote(self, workspace):
+    def read_remote(self, workspace, target_remote=None, **kw):
+        target_remote = target_remote or self.default_remote
         target = join(workspace.working_dir, self._hgrc)
         cp = ConfigParser()
         cp.read(target)
-        if cp.has_option('paths', self._default_remote_name):
-            return cp.get('paths', self._default_remote_name)
+        if cp.has_option('paths', target_remote):
+            return cp.get('paths', target_remote)
 
-    def write_remote(self, workspace):
+    def write_remote(self, workspace, target_remote=None, **kw):
+        target_remote = target_remote or self.default_remote
         target = join(workspace.working_dir, self._hgrc)
         cp = ConfigParser()
         cp.read(target)
         if not cp.has_section('paths'):
             cp.add_section('paths')
-        cp.set('paths', self._default_remote_name, self.remote)
+        cp.set('paths', target_remote, self.remote)
         with open(target, 'w') as fd:
             cp.write(fd)
 
     def push(self, workspace, username=None, password=None, **kw):
         # XXX origin may be undefined
-        args = self._args(workspace, 'push')
+        push_target = self.get_push_target(workspace, username, password)
+        args = self._args(workspace, 'push', push_target)
         return self.execute(*args)
 
 
@@ -107,7 +116,7 @@ class GitDvcsCmd(BaseDvcsCmd):
     name = 'git'
     marker = '.git'
 
-    _default_remote_name = 'origin'
+    default_remote = 'origin'
 
     def _args(self, workspace, *args):
         worktree = workspace.working_dir
@@ -135,20 +144,22 @@ class GitDvcsCmd(BaseDvcsCmd):
         self.execute(*self._args(workspace, 'config', 'user.email', email))
         return self.execute(*self._args(workspace, 'commit', '-m', message))
 
-    def read_remote(self, workspace):
+    def read_remote(self, workspace, target_remote=None, **kw):
+        target_remote = target_remote or self.default_remote
         stdout, err = self.execute(*self._args(workspace, 'remote', '-v'))
         if stdout:
             for lines in stdout.splitlines():
                 remotes = lines.decode('utf8', errors='replace').split()
-                if remotes[0] == self._default_remote_name:
+                if remotes[0] == target_remote:
                     # XXX assuming first one is correct
                     return remotes[1]
 
-    def write_remote(self, workspace):
+    def write_remote(self, workspace, target_remote=None, **kw):
+        target_remote = target_remote or self.default_remote
         stdout, err = self.execute(*self._args(workspace, 'remote',
-            'rm', self._default_remote_name))
+            'rm', target_remote))
         stdout, err = self.execute(*self._args(workspace, 'remote',
-            'add', self._default_remote_name, self.remote))
+            'add', target_remote, self.remote))
 
     def push(self, workspace, username=None, password=None, branches=None,
             **kw):
@@ -156,9 +167,9 @@ class GitDvcsCmd(BaseDvcsCmd):
         branches
             A list of branches to push.  Defaults to --all
         """
-        # TODO username/password for https pushes
-        # XXX origin may be undefined
-        args = self._args(workspace, 'push', self._default_remote_name)
+
+        push_target = self.get_push_target(workspace, username, password)
+        args = self._args(workspace, 'push', push_target)
         if not branches:
             args.append('--all')
         elif isinstance(branches, list):
