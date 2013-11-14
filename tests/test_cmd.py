@@ -117,6 +117,12 @@ class RawCmdTests(object):
             username='username', password='password')
         self.assertEqual(push_target, 'newremote')
 
+        push_target = self.cmd.get_push_target(self.workspace,
+            target_remote='http://alt.example.com/repo',
+            username='username', password='password')
+        self.assertEqual(push_target,
+            'http://username:password@alt.example.com/repo')
+
 
 @skipIf(not GitDvcsCmd.available(), 'git is not available')
 class GitDvcsCmdTestCase(CoreTestCase, RawCmdTests):

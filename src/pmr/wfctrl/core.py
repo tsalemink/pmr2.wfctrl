@@ -256,7 +256,7 @@ class BaseDvcsCmd(BaseCmd):
         target_url = self.read_remote(workspace, target_remote=target_remote)
         if target_url is None:
             # XXX should we inform caller here that it's undefined?
-            return target_remote
+            return set_url_cred(target_remote, username, password)
         return set_url_cred(target_url, username, password)
 
     def update_remote(self, workspace):
