@@ -1,4 +1,9 @@
-from urlparse import urlsplit, urlunsplit
+import sys
+
+if sys.version_info > (3, 0):
+    from urllib.parse import urlsplit, urlunsplit
+else:
+    from urlparse import urlsplit, urlunsplit
 
 def set_url_cred(url, username=None, password=None,
         _protocols=('http', 'https')):
