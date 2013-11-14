@@ -125,7 +125,7 @@ class GitDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         self.cmd.remote = target
         self.cmd.update_remote(self.workspace)
         self.assertEqual(self.cmd.remote,
-            self.cmd._get_current_origin(self.workspace))
+            self.cmd.read_remote(self.workspace))
         # nothing should be done here
         self.cmd.update_remote(self.workspace)
 
@@ -140,7 +140,7 @@ class GitDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         self.cmd.update_remote(self.workspace)
         # should be set to a new one and can be loaded.
         self.assertEqual(new_target,
-            self.cmd._get_current_origin(self.workspace))
+            self.cmd.read_remote(self.workspace))
 
 
 @skipIf(not MercurialDvcsCmd.available(), 'mercurial is not available')
@@ -171,7 +171,7 @@ class MercurialDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         self.cmd.remote = target
         self.cmd.update_remote(self.workspace)
         self.assertEqual(self.cmd.remote,
-            self.cmd._get_current_origin(self.workspace))
+            self.cmd.read_remote(self.workspace))
         # nothing should be done here
         self.cmd.update_remote(self.workspace)
 
@@ -186,4 +186,4 @@ class MercurialDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         self.cmd.update_remote(self.workspace)
         # should be set to a new one and can be loaded.
         self.assertEqual(new_target,
-            self.cmd._get_current_origin(self.workspace))
+            self.cmd.read_remote(self.workspace))

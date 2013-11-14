@@ -54,7 +54,8 @@ class BaseDvcsCmdTestCase(TestCase):
         self.assertRaises(NotImplementedError, cmd.init_new, workspace)
         self.assertRaises(NotImplementedError, cmd.add, workspace, '')
         self.assertRaises(NotImplementedError, cmd.commit, workspace, '')
-        self.assertRaises(NotImplementedError, cmd.update_remote, workspace)
+        self.assertRaises(NotImplementedError, cmd.read_remote, workspace)
+        self.assertRaises(NotImplementedError, cmd.write_remote, workspace)
         self.assertRaises(NotImplementedError, cmd.push, workspace)
 
 

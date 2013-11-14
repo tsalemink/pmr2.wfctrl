@@ -224,6 +224,7 @@ class BaseDvcsCmd(BaseCmd):
     def save(self, workspace, message='', **kw):
         for path in workspace.get_tracked_subpaths():
             self.add(workspace, path)
+        # XXX return these results.
         self.commit(workspace, message)
         self.update_remote(workspace)
         self.push(workspace)
@@ -240,8 +241,30 @@ class BaseDvcsCmd(BaseCmd):
     def commit(self, workspace, message, **kw):
         raise NotImplementedError
 
-    def update_remote(self, workspace, **kw):
+    def read_remote(self, workspace, **kw):
         raise NotImplementedError
+
+    def write_remote(self, workspace, **kw):
+        raise NotImplementedError
+
+    def update_remote(self, workspace):
+        default_origin = self._default_remote_name
+        stored_remote = self.read_remote(workspace)
+
+        if stored_remote and self.remote:
+            if self.remote == stored_remote:
+                logger.debug('remotes matched, not issuing update command')
+                return
+            logger.info('updating stored remote with current remote')
+            self.write_remote(workspace)
+        elif self.remote is None and stored_remote is None:
+            logger.warning('no default remote define, push will fail')
+        elif self.remote and stored_remote is None:
+            logger.info('writing current remote in cmd object')
+            self.write_remote(workspace)
+        elif self.remote is None and stored_remote:
+            logger.debug('using stored remote')
+            self.remote = stored_remote
 
     def push(self, workspace, **kw):
         raise NotImplementedError

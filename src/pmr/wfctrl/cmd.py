@@ -78,14 +78,14 @@ class MercurialDvcsCmd(BaseDvcsCmd):
             cmd.extend(['-u', self.committer])
         return self.execute(*self._args(workspace, *cmd))
 
-    def _get_current_origin(self, workspace):
+    def read_remote(self, workspace):
         target = join(workspace.working_dir, self._hgrc)
         cp = ConfigParser()
         cp.read(target)
         if cp.has_option('paths', self._default_remote_name):
             return cp.get('paths', self._default_remote_name)
 
-    def _write_current_origin(self, workspace):
+    def write_remote(self, workspace):
         target = join(workspace.working_dir, self._hgrc)
         cp = ConfigParser()
         cp.read(target)
@@ -95,25 +95,7 @@ class MercurialDvcsCmd(BaseDvcsCmd):
         with open(target, 'w') as fd:
             cp.write(fd)
 
-    def update_remote(self, workspace):
-        stored_remote = self._get_current_origin(workspace)
-        if stored_remote and self.remote:
-            if self.remote == stored_remote:
-                logger.debug('remotes matched, not issuing update command')
-                return
-            logger.debug('updating stored remote with current remote')
-            self._write_current_origin(workspace)
-        elif self.remote is None and stored_remote is None:
-            logger.info('no default remote define, push will fail')
-        elif self.remote and stored_remote is None:
-            logger.info('storing the defined remote in cmd object')
-            self._write_current_origin(workspace)
-        elif self.remote is None and stored_remote:
-            logger.debug('using stored remote')
-            self.remote = stored_remote
-
-    def push(self, workspace, **kw):
-        # TODO username/password for https pushes
+    def push(self, workspace, username=None, password=None, **kw):
         # XXX origin may be undefined
         args = self._args(workspace, 'push')
         return self.execute(*args)
@@ -153,7 +135,7 @@ class GitDvcsCmd(BaseDvcsCmd):
         self.execute(*self._args(workspace, 'config', 'user.email', email))
         return self.execute(*self._args(workspace, 'commit', '-m', message))
 
-    def _get_current_origin(self, workspace):
+    def read_remote(self, workspace):
         stdout, err = self.execute(*self._args(workspace, 'remote', '-v'))
         if stdout:
             for lines in stdout.splitlines():
@@ -162,28 +144,14 @@ class GitDvcsCmd(BaseDvcsCmd):
                     # XXX assuming first one is correct
                     return remotes[1]
 
-    def update_remote(self, workspace):
-        default_origin = self._default_remote_name
-        stored_remote = self._get_current_origin(workspace)
+    def write_remote(self, workspace):
+        stdout, err = self.execute(*self._args(workspace, 'remote',
+            'rm', self._default_remote_name))
+        stdout, err = self.execute(*self._args(workspace, 'remote',
+            'add', self._default_remote_name, self.remote))
 
-        if stored_remote and self.remote:
-            if self.remote == stored_remote:
-                logger.debug('remotes matched, not issuing update command')
-                return
-            logger.debug('updating stored remote with current remote')
-            stdout, err = self.execute(*self._args(workspace, 'remote',
-                'set-url', default_origin, self.remote))
-        elif self.remote is None and stored_remote is None:
-            logger.info('no default remote define, push will fail')
-        elif self.remote and stored_remote is None:
-            logger.info('storing the defined remote in cmd object')
-            stdout, err = self.execute(*self._args(workspace, 'remote',
-                'add', default_origin, self.remote))
-        elif self.remote is None and stored_remote:
-            logger.debug('using stored remote')
-            self.remote = stored_remote
-
-    def push(self, workspace, branches=None, **kw):
+    def push(self, workspace, username=None, password=None, branches=None,
+            **kw):
         """
         branches
             A list of branches to push.  Defaults to --all
