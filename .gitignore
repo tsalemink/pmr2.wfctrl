@@ -11,5 +11,5 @@
 .*.swp
 *.mo
 .coverage
-.env
+.env*
 .installed.cfg
