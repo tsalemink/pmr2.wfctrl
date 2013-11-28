@@ -86,7 +86,7 @@ class MercurialDvcsCmd(BaseDvcsCmd):
 
     def read_remote(self, workspace, target_remote=None, **kw):
         target_remote = target_remote or self.default_remote
-        target = join(workspace.working_dir, self._hgrc)
+        target = join(workspace.working_dir, self.marker, self._hgrc)
         cp = ConfigParser()
         cp.read(target)
         if cp.has_option('paths', target_remote):
@@ -94,7 +94,7 @@ class MercurialDvcsCmd(BaseDvcsCmd):
 
     def write_remote(self, workspace, target_remote=None, **kw):
         target_remote = target_remote or self.default_remote
-        target = join(workspace.working_dir, self._hgrc)
+        target = join(workspace.working_dir, self.marker, self._hgrc)
         cp = ConfigParser()
         cp.read(target)
         if not cp.has_section('paths'):

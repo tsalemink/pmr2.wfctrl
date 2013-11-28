@@ -207,3 +207,10 @@ class MercurialDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         target = os.path.join(self.working_dir, 'remote')
         MercurialDvcsCmd._execute(['init', target])
         return target
+
+    def test_read_write_remote(self):
+        self.cmd.init_new(self.workspace)
+        cmd = MercurialDvcsCmd(remote='http://example.com/hg')
+        cmd.write_remote(self.workspace)
+        with open(os.path.join(self.workspace_dir, '.hg', 'hgrc')) as fd:
+            self.assertTrue('default = http://example.com/hg' in fd.read())
