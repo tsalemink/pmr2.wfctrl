@@ -46,6 +46,9 @@ class DemoDvcsCmd(BaseDvcsCmd):
     def read_remote(self, workspace, target_remote=None, **kw):
         return self.remote or self._default_target
 
+    def pull(self, workspace, **kw):
+        self.queue.append([self.binary, 'pull'])
+
     def push(self, workspace, **kw):
         self.queue.append([self.binary, 'push'])
 
@@ -102,6 +105,14 @@ class MercurialDvcsCmd(BaseDvcsCmd):
         cp.set('paths', target_remote, self.remote)
         with open(target, 'w') as fd:
             cp.write(fd)
+
+    def pull(self, workspace, username=None, password=None, **kw):
+        # XXX origin may be undefined
+        target = self.get_remote(workspace,
+            username=username, password=password)
+        # XXX assuming repo is clean
+        args = self._args(workspace, 'pull', target)
+        return self.execute(*args)
 
     def push(self, workspace, username=None, password=None, **kw):
         # XXX origin may be undefined
@@ -161,6 +172,14 @@ class GitDvcsCmd(BaseDvcsCmd):
             'rm', target_remote))
         stdout, err = self.execute(*self._args(workspace, 'remote',
             'add', target_remote, self.remote))
+
+    def pull(self, workspace, username=None, password=None, **kw):
+        # XXX origin may be undefined
+        target = self.get_remote(workspace,
+            username=username, password=password)
+        # XXX assuming repo is clean
+        args = self._args(workspace, 'pull', target)
+        return self.execute(*args)
 
     def push(self, workspace, username=None, password=None, branches=None,
             **kw):

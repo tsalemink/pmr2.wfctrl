@@ -57,6 +57,16 @@ class DemoVcsCmdWorkspaceTestCase(CoreTestCase, CoreTests):
             ['vcs', 'push'],
         ])
 
+    def test_cmd_pull(self):
+        wks = self.make_workspace()
+        # TODO make a remote sync workflow of sort
+        self.cmd = DemoDvcsCmd(remote='http://example.com')
+        wks = CmdWorkspace(self.workspace_dir, self.cmd)
+        self.cmd.pull(wks)
+        self.assertEqual(self.cmd.queue, [
+            ['vcs', 'pull'],
+        ])
+
     def test_add_files_multi(self):
         CoreTests.test_add_files_multi(self)
 

@@ -162,6 +162,19 @@ class RawCmdTests(object):
         result = cmd.push(workspace, username='username', password='password')
         self.assertTrue('http://username:password@example.com/' in result[0])
 
+    def test_pull(self):
+        class TrapCmd(self.cmdcls):
+            def read_remote(self, workspace, target_remote=None):
+                return self.remote
+            def execute(self, *a, **kw):
+                return (a, kw)
+
+        workspace = CmdWorkspace(self.workspace_dir, self.cmd)
+        cmd = TrapCmd(remote='http://example.com/')
+        workspace = CmdWorkspace(self.workspace_dir, cmd)
+        result = cmd.pull(workspace, username='username', password='password')
+        self.assertTrue('http://username:password@example.com/' in result[0])
+
 
 @skipIf(not GitDvcsCmd.available(), 'git is not available')
 class GitDvcsCmdTestCase(CoreTestCase, RawCmdTests):

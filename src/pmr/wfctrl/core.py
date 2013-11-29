@@ -278,5 +278,8 @@ class BaseDvcsCmd(BaseCmd):
             logger.debug('using stored remote')
             self.remote = stored_remote
 
+    def pull(self, workspace, **kw):
+        raise NotImplementedError
+
     def push(self, workspace, **kw):
         raise NotImplementedError
