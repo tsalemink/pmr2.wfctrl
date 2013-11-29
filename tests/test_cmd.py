@@ -99,28 +99,28 @@ class RawCmdTests(object):
         self.assertTrue('nested files' in stdout)
         self.assertTrue('single file' in stdout)
 
-    def test_get_push_target(self):
+    def test_get_remote(self):
         self.cmd.init_new(self.workspace)
-        push_target = self.cmd.get_push_target(self.workspace,
+        push_target = self.cmd.get_remote(self.workspace,
             username='username', password='password')
         # currently no errors, just the token is returned
         self.assertEqual(push_target, self.cmd.default_remote)
 
         self.cmd.remote = 'http://example.com/repo'
         self.cmd.write_remote(self.workspace)
-        push_target = self.cmd.get_push_target(self.workspace)
+        push_target = self.cmd.get_remote(self.workspace)
         self.assertEqual(push_target, 'http://example.com/repo')
-        push_target = self.cmd.get_push_target(self.workspace,
+        push_target = self.cmd.get_remote(self.workspace,
             username='username', password='password')
         self.assertEqual(push_target,
             'http://username:password@example.com/repo')
 
-        push_target = self.cmd.get_push_target(self.workspace,
+        push_target = self.cmd.get_remote(self.workspace,
             target_remote='newremote',
             username='username', password='password')
         self.assertEqual(push_target, 'newremote')
 
-        push_target = self.cmd.get_push_target(self.workspace,
+        push_target = self.cmd.get_remote(self.workspace,
             target_remote='http://alt.example.com/repo',
             username='username', password='password')
         self.assertEqual(push_target,

@@ -105,7 +105,7 @@ class MercurialDvcsCmd(BaseDvcsCmd):
 
     def push(self, workspace, username=None, password=None, **kw):
         # XXX origin may be undefined
-        push_target = self.get_push_target(workspace,
+        push_target = self.get_remote(workspace,
             username=username, password=password)
         args = self._args(workspace, 'push', push_target)
         return self.execute(*args)
@@ -169,7 +169,7 @@ class GitDvcsCmd(BaseDvcsCmd):
             A list of branches to push.  Defaults to --all
         """
 
-        push_target = self.get_push_target(workspace,
+        push_target = self.get_remote(workspace,
             username=username, password=password)
         args = self._args(workspace, 'push', push_target)
         if not branches:

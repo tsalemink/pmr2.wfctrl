@@ -250,7 +250,7 @@ class BaseDvcsCmd(BaseCmd):
     def write_remote(self, workspace, target_remote=None, **kw):
         raise NotImplementedError
 
-    def get_push_target(self, workspace, 
+    def get_remote(self, workspace, 
             target_remote=None, username=None, password=None):
         target_remote = target_remote or self.default_remote
         target_url = self.read_remote(workspace, target_remote=target_remote)

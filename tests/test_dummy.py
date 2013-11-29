@@ -63,13 +63,13 @@ class DemoVcsCmdWorkspaceTestCase(CoreTestCase, CoreTests):
     def test_add_files_nested(self):
         CoreTests.test_add_files_nested(self)
 
-    def test_get_push_target(self):
+    def test_get_remote(self):
         wks = self.make_workspace()
-        target = self.cmd.get_push_target(wks)
+        target = self.cmd.get_remote(wks)
         self.assertEqual(target, 'http://vcs.example.com/repo')
-        target = self.cmd.get_push_target(wks, username='u', password='p')
+        target = self.cmd.get_remote(wks, username='u', password='p')
         self.assertEqual(target, 'http://u:p@vcs.example.com/repo')
 
         self.cmd._default_target = None
-        target = self.cmd.get_push_target(wks, username='u', password='p')
+        target = self.cmd.get_remote(wks, username='u', password='p')
         self.assertEqual(target, '__default_remote__')
