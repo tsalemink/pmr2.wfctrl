@@ -20,6 +20,16 @@ class RawCmdTests(object):
 
     cmdcls = None
 
+    def TrapCmd(self, _trap_cmds=None, *a, **kw):
+        class TrapCmd(self.cmdcls):
+            trap_cmds = _trap_cmds or ['push', 'pull', 'clone']
+            def execute(self, *a, **kw):
+                for t in self.trap_cmds:
+                    if t in a:
+                        return (a, kw)
+                return super(TrapCmd, self).execute(*a, **kw)
+        return TrapCmd(*a, **kw)
+
     @property
     def marker(self):
         return self.cmdcls.marker
@@ -150,27 +160,17 @@ class RawCmdTests(object):
             self.cmd.read_remote(self.workspace))
 
     def test_push(self):
-        class TrapCmd(self.cmdcls):
-            def read_remote(self, workspace, target_remote=None):
-                return self.remote
-            def execute(self, *a, **kw):
-                return (a, kw)
-
         workspace = CmdWorkspace(self.workspace_dir, self.cmd)
-        cmd = TrapCmd(remote='http://example.com/')
+        cmd = self.TrapCmd(remote='http://example.com/')
+        cmd.write_remote(workspace)
         workspace = CmdWorkspace(self.workspace_dir, cmd)
         result = cmd.push(workspace, username='username', password='password')
         self.assertTrue('http://username:password@example.com/' in result[0])
 
     def test_pull(self):
-        class TrapCmd(self.cmdcls):
-            def read_remote(self, workspace, target_remote=None):
-                return self.remote
-            def execute(self, *a, **kw):
-                return (a, kw)
-
         workspace = CmdWorkspace(self.workspace_dir, self.cmd)
-        cmd = TrapCmd(remote='http://example.com/')
+        cmd = self.TrapCmd(remote='http://example.com/')
+        cmd.write_remote(workspace)
         workspace = CmdWorkspace(self.workspace_dir, cmd)
         result = cmd.pull(workspace, username='username', password='password')
         self.assertTrue('http://username:password@example.com/' in result[0])
