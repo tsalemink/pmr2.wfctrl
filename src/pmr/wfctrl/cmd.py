@@ -2,10 +2,10 @@ import logging
 from os.path import join
 import sys
 
-if sys.version_info > (3, 0):
+if sys.version_info > (3, 0): # pragma: no cover
     from configparser import ConfigParser
     from io import StringIO
-else:
+else: # pragma: no cover
     from ConfigParser import ConfigParser
     # io.StringIO in python2.7 is not ready for the above.
     from StringIO import StringIO
@@ -121,6 +121,12 @@ class MercurialDvcsCmd(BaseDvcsCmd):
         args = self._args(workspace, 'push', push_target)
         return self.execute(*args)
 
+    def reset_to_remote(self, workspace, branch=None):
+        if branch is None:
+            branch = 'tip'
+        args = self._args(workspace, 'update', '-C', '-r', branch)
+        return self.execute(*args)
+
 
 class GitDvcsCmd(BaseDvcsCmd):
 
@@ -196,4 +202,12 @@ class GitDvcsCmd(BaseDvcsCmd):
         elif isinstance(branches, list):
             args.extend(branches)
 
+        return self.execute(*args)
+
+    def reset_to_remote(self, workspace, branch=None):
+        # XXX not actually resetting to reomte
+        # XXX assuming 'master' is the current branch
+        if branch is None:
+            branch = 'master'
+        args = self._args(workspace, 'reset', '--hard', branch)
         return self.execute(*args)

@@ -159,7 +159,7 @@ class RawCmdTests(object):
         self.assertEqual(new_target,
             self.cmd.read_remote(self.workspace))
 
-    def test_push(self):
+    def test_push_url_with_creds(self):
         workspace = CmdWorkspace(self.workspace_dir, self.cmd)
         cmd = self.TrapCmd(remote='http://example.com/')
         cmd.write_remote(workspace)
@@ -167,13 +167,43 @@ class RawCmdTests(object):
         result = cmd.push(workspace, username='username', password='password')
         self.assertTrue('http://username:password@example.com/' in result[0])
 
-    def test_pull(self):
+    def test_pull_url_with_creds(self):
         workspace = CmdWorkspace(self.workspace_dir, self.cmd)
         cmd = self.TrapCmd(remote='http://example.com/')
         cmd.write_remote(workspace)
         workspace = CmdWorkspace(self.workspace_dir, cmd)
         result = cmd.pull(workspace, username='username', password='password')
         self.assertTrue('http://username:password@example.com/' in result[0])
+
+    def test_reset_to_remote(self):
+        self.cmd.init_new(self.workspace)
+        helper = CoreTests()
+        helper.workspace_dir = self.workspace_dir
+        self.cmd.set_committer('Tester', 'test@example.com')
+        files = helper.add_files_nested(self.workspace)
+        self.workspace.save(message='nested files')
+
+        # define a remote
+        remote = self._make_remote()
+        self.cmd.remote = remote
+        fn = helper.write_file('Test content')
+        self.workspace.add_file(basename(fn))
+        # make a commit, which should now push.
+        self.workspace.save(message='single file')
+
+        # write a change to the latest file
+
+        helper.write_file('Changed content', name=fn)
+        with open(fn) as fd:
+            # ensure that content actually changed.
+            self.assertEqual(fd.read(), 'Changed content')
+
+        result = self.cmd.reset_to_remote(self.workspace)
+        with open(fn) as fd:
+            # ensure that content got resetted to the original state in
+            # the remote
+            c = fd.read()
+            self.assertEqual(c, 'Test content')
 
 
 @skipIf(not GitDvcsCmd.available(), 'git is not available')

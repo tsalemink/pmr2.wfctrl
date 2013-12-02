@@ -283,3 +283,6 @@ class BaseDvcsCmd(BaseCmd):
 
     def push(self, workspace, **kw):
         raise NotImplementedError
+
+    def reset_to_remote(self, workspace, **kw):
+        raise NotImplementedError
