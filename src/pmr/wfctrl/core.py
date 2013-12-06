@@ -10,6 +10,15 @@ logger = logging.getLogger(__name__)
 def dummy_action(workspace):
     return
 
+_cmd_classes = {}
+
+def register_cmd(*cmd_classes):
+    for cmd_cls in cmd_classes:
+        if cmd_cls.marker in _cmd_classes:
+            continue
+        if cmd_cls.available():
+            _cmd_classes[cmd_cls.marker] = cmd_cls
+
 
 class BaseWorkspace(object):
     """

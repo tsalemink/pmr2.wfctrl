@@ -10,7 +10,7 @@ else: # pragma: no cover
     # io.StringIO in python2.7 is not ready for the above.
     from StringIO import StringIO
 
-from pmr.wfctrl.core import BaseDvcsCmd
+from pmr.wfctrl.core import BaseDvcsCmd, register_cmd
 from pmr.wfctrl.utils import set_url_cred
 
 logger = logging.getLogger(__name__)
@@ -211,3 +211,11 @@ class GitDvcsCmd(BaseDvcsCmd):
             branch = 'master'
         args = self._args(workspace, 'reset', '--hard', branch)
         return self.execute(*args)
+
+
+def _register():
+    register_cmd(MercurialDvcsCmd, GitDvcsCmd)
+
+register = _register
+register()
+del register

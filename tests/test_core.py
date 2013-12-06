@@ -5,6 +5,7 @@ from os.path import join
 import tempfile
 import shutil
 
+from pmr.wfctrl import core
 from pmr.wfctrl.core import BaseCmd
 from pmr.wfctrl.core import BaseDvcsCmd
 from pmr.wfctrl.core import BaseWorkspace
@@ -14,6 +15,35 @@ from pmr.wfctrl.cmd import DemoDvcsCmd
 
 from pmr.wfctrl.testing.base import CoreTestCase
 from pmr.wfctrl.testing.base import CoreTests
+
+
+class CoreCmdRegistrationTestCase(TestCase):
+
+    def setUp(self):
+        self._orig_cmd, core._cmd_classes = core._cmd_classes, {}
+
+    def tearDown(self):
+        core._cmd_classes = self._orig_cmd
+
+    def test_register_avail(self):
+        class TestCmd(BaseCmd):
+            marker = '.testmarker'
+            @classmethod
+            def available(self):
+                return True
+        core.register_cmd(TestCmd)
+        self.assertEqual(core._cmd_classes.get('.testmarker'), TestCmd)
+        core.register_cmd(TestCmd)
+        self.assertEqual(len(core._cmd_classes), 1)
+
+    def test_register_unavail(self):
+        class TestCmd(BaseCmd):
+            marker = '.testmarker'
+            @classmethod
+            def available(self):
+                return False
+        core.register_cmd(TestCmd)
+        self.assertEqual(len(core._cmd_classes), 0)
 
 
 class BaseCmdTestCase(TestCase):
