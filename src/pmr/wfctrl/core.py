@@ -81,20 +81,23 @@ class CmdWorkspace(BaseWorkspace):
     Default workspace, file based.
     """
 
-    def __init__(self, working_dir, cmd=None, **kw):
+    def __init__(self, working_dir, cmd=None, auto=False, **kw):
         """
         marker
             The marker path that denotes that this was already
             initialized.
-        cmd_table
-            A dictionary of callable objects that will be used for
-            certain situations.  Keys are:
-
-            - init
-            - save
+        cmd
+            A command object
         """
 
         BaseWorkspace.__init__(self, working_dir)
+        if auto:
+            for marker, cls in _cmd_classes.items():
+                target = abspath(normpath(join(self.working_dir, marker)))
+                if not isdir(target):
+                    continue
+                cmd = cls()
+                break
         self.cmd = cmd
         self.update_cmd_table(cmd)
         self.initialize()

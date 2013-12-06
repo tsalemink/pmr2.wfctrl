@@ -38,6 +38,12 @@ class RawCmdTests(object):
         self.cmd.init_new(self.workspace)
         self.assertTrue(isdir(join(self.workspace_dir, self.marker)))
 
+    def test_auto_init(self):
+        self.cmd.init_new(self.workspace)
+        CmdWorkspace(self.workspace_dir)
+        workspace = CmdWorkspace(self.workspace_dir, auto=True)
+        self.assertTrue(isinstance(workspace.cmd, self.cmdcls))
+
     def test_clone(self):
         self.cmd.init_new(self.workspace)
         target = os.path.join(self.working_dir, 'new_target')
