@@ -141,3 +141,7 @@ class BareCmdWorkspaceTestCase(CoreTestCase, CoreTests):
         cmd.marker = None
         wks = CmdWorkspace(self.workspace_dir, cmd)
         self.assertEqual(cmd.result, [])
+
+    def test_cmd_workspace_no_marker_auto(self):
+        wks = CmdWorkspace(self.workspace_dir, auto=True)
+        self.assertTrue(wks.cmd is None)
