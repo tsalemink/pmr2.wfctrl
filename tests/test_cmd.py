@@ -5,6 +5,7 @@ from os.path import join, isdir, basename
 import tempfile
 import shutil
 
+from pmr.wfctrl.core import get_cmd_by_name
 from pmr.wfctrl.core import CmdWorkspace
 from pmr.wfctrl.cmd import GitDvcsCmd
 from pmr.wfctrl.cmd import MercurialDvcsCmd
@@ -43,6 +44,15 @@ class RawCmdTests(object):
         CmdWorkspace(self.workspace_dir)
         workspace = CmdWorkspace(self.workspace_dir, auto=True)
         self.assertTrue(isinstance(workspace.cmd, self.cmdcls))
+
+    def test_get_cmd_by_name(self):
+        # generally this isn't run, it's here to make sure that the
+        # first pass is run here but then the subclasses of these tests
+        # HAVE to implement this check explicitly so that any accidental
+        # name changes within the main class will be picked up, as it
+        # can have consequences when used by users.
+        self.assertEqual(get_cmd_by_name(self.cmdcls.name), self.cmdcls)
+        raise NotImplementedError
 
     def test_clone(self):
         self.cmd.init_new(self.workspace)
@@ -234,6 +244,9 @@ class GitDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         GitDvcsCmd._execute(['init', target, '--bare'])
         return target
 
+    def test_get_cmd_by_name(self):
+        self.assertEqual(get_cmd_by_name('git'), self.cmdcls)
+
 
 @skipIf(not MercurialDvcsCmd.available(), 'mercurial is not available')
 class MercurialDvcsCmdTestCase(CoreTestCase, RawCmdTests):
@@ -263,3 +276,6 @@ class MercurialDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         cmd.write_remote(self.workspace)
         with open(os.path.join(self.workspace_dir, '.hg', 'hgrc')) as fd:
             self.assertTrue('default = http://example.com/hg' in fd.read())
+
+    def test_get_cmd_by_name(self):
+        self.assertEqual(get_cmd_by_name('mercurial'), self.cmdcls)
