@@ -11,6 +11,7 @@ def dummy_action(workspace):
     return
 
 _cmd_classes = {}
+_cmd_names = {}
 
 def register_cmd(*cmd_classes):
     for cmd_cls in cmd_classes:
@@ -18,6 +19,12 @@ def register_cmd(*cmd_classes):
             continue
         if cmd_cls.available():
             _cmd_classes[cmd_cls.marker] = cmd_cls
+            # XXX we are not handling cases where two markers in different
+            # classes that uses the same name
+            _cmd_names[cmd_cls.name] = cmd_cls
+
+def get_cmd_by_name(cmd_name):
+    return _cmd_names.get(cmd_name)
 
 
 class BaseWorkspace(object):

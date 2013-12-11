@@ -28,11 +28,13 @@ class CoreCmdRegistrationTestCase(TestCase):
     def test_register_avail(self):
         class TestCmd(BaseCmd):
             marker = '.testmarker'
+            name = 'test_cmd'
             @classmethod
             def available(self):
                 return True
         core.register_cmd(TestCmd)
         self.assertEqual(core._cmd_classes.get('.testmarker'), TestCmd)
+        self.assertEqual(core.get_cmd_by_name('test_cmd'), TestCmd)
         core.register_cmd(TestCmd)
         self.assertEqual(len(core._cmd_classes), 1)
 
