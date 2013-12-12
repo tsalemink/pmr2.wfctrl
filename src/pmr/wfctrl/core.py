@@ -203,7 +203,16 @@ class BaseDvcsCmd(BaseCmd):
             args = []
         cmdargs = [cmd_binary]
         cmdargs.extend(args)
-        p = Popen(cmdargs, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+
+        extra_kw = {}
+
+        if os.name == 'posix':
+            # What this does is to prevent subprocesses from opening
+            # pty/tty for further user input/output.
+            # Still need to determine whether this is needed on Windows.
+            extra_kw['preexec_fn'] = os.setsid
+
+        p = Popen(cmdargs, stdin=PIPE, stdout=PIPE, stderr=PIPE, **extra_kw)
         return p.communicate()
 
     # public class method because this is useful before class is
