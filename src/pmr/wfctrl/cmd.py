@@ -159,8 +159,10 @@ class GitDvcsCmd(BaseDvcsCmd):
     def commit(self, workspace, message, **kw):
         # XXX no temporary override as far as I know.
         name, email = self._committer
-        self.execute(*self._args(workspace, 'config', 'user.name', name))
-        self.execute(*self._args(workspace, 'config', 'user.email', email))
+        if name:
+            self.execute(*self._args(workspace, 'config', 'user.name', name))
+        if email:
+            self.execute(*self._args(workspace, 'config', 'user.email', email))
         return self.execute(*self._args(workspace, 'commit', '-m', message))
 
     def read_remote(self, workspace, target_remote=None, **kw):
