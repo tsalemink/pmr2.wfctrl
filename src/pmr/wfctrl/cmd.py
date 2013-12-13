@@ -60,7 +60,7 @@ class MercurialDvcsCmd(BaseDvcsCmd):
     marker = '.hg'
     default_remote = 'default'
     _hgrc = 'hgrc'
-    committer = None
+    _committer = None
 
     def _args(self, workspace, *args):
         result = ['-R', workspace.working_dir]
@@ -69,7 +69,7 @@ class MercurialDvcsCmd(BaseDvcsCmd):
 
     def set_committer(self, name, email, **kw):
         # TODO persist config.
-        self.committer = '%s <%s>' % (name, email)
+        self._committer = '%s <%s>' % (name, email)
 
     def clone(self, workspace, **kw):
         return self.execute('clone', self.remote, workspace.working_dir)
@@ -83,8 +83,8 @@ class MercurialDvcsCmd(BaseDvcsCmd):
     def commit(self, workspace, message, **kw):
         # XXX need to customize the user name
         cmd = ['commit', '-m', message]
-        if self.committer:
-            cmd.extend(['-u', self.committer])
+        if self._committer:
+            cmd.extend(['-u', self._committer])
         return self.execute(*self._args(workspace, *cmd))
 
     def read_remote(self, workspace, target_remote=None, **kw):
@@ -135,6 +135,7 @@ class GitDvcsCmd(BaseDvcsCmd):
     marker = '.git'
 
     default_remote = 'origin'
+    _committer = (None, None)
 
     def _args(self, workspace, *args):
         worktree = workspace.working_dir
@@ -144,7 +145,7 @@ class GitDvcsCmd(BaseDvcsCmd):
         return result
 
     def set_committer(self, name, email, **kw):
-        self.committer = (name, email)
+        self._committer = (name, email)
 
     def clone(self, workspace, **kw):
         return self.execute('clone', self.remote, workspace.working_dir)
@@ -157,7 +158,7 @@ class GitDvcsCmd(BaseDvcsCmd):
 
     def commit(self, workspace, message, **kw):
         # XXX no temporary override as far as I know.
-        name, email = self.committer
+        name, email = self._committer
         self.execute(*self._args(workspace, 'config', 'user.name', name))
         self.execute(*self._args(workspace, 'config', 'user.email', email))
         return self.execute(*self._args(workspace, 'commit', '-m', message))
