@@ -1,8 +1,9 @@
 Changelog
 =========
 
-0.0-dev (unreleased)
---------------------
+0.1 - 2013-12-18
+----------------
 
-- Package created using templer
-  []
+- Initial release.
+- Core support for basic incremental workflow management using both git
+  and mercurial.
