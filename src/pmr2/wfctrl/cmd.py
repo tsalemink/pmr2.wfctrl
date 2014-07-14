@@ -10,8 +10,8 @@ else: # pragma: no cover
     # io.StringIO in python2.7 is not ready for the above.
     from StringIO import StringIO
 
-from pmr.wfctrl.core import BaseDvcsCmd, register_cmd
-from pmr.wfctrl.utils import set_url_cred
+from pmr2.wfctrl.core import BaseDvcsCmd, register_cmd
+from pmr2.wfctrl.utils import set_url_cred
 
 logger = logging.getLogger(__name__)
 

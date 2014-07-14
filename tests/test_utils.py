@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from pmr.wfctrl import utils
+from pmr2.wfctrl import utils
 
 
 class SetUrlCredsTestCase(TestCase):

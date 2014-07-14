@@ -5,13 +5,13 @@ from os.path import join, isdir, basename
 import tempfile
 import shutil
 
-from pmr.wfctrl.core import get_cmd_by_name
-from pmr.wfctrl.core import CmdWorkspace
-from pmr.wfctrl.cmd import GitDvcsCmd
-from pmr.wfctrl.cmd import MercurialDvcsCmd
+from pmr2.wfctrl.core import get_cmd_by_name
+from pmr2.wfctrl.core import CmdWorkspace
+from pmr2.wfctrl.cmd import GitDvcsCmd
+from pmr2.wfctrl.cmd import MercurialDvcsCmd
 
-from pmr.wfctrl.testing.base import CoreTestCase
-from pmr.wfctrl.testing.base import CoreTests
+from pmr2.wfctrl.testing.base import CoreTestCase
+from pmr2.wfctrl.testing.base import CoreTests
 
 def fail(*a, **kw):
     raise Exception()

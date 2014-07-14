@@ -5,16 +5,16 @@ from os.path import join
 import tempfile
 import shutil
 
-from pmr.wfctrl import core
-from pmr.wfctrl.core import BaseCmd
-from pmr.wfctrl.core import BaseDvcsCmd
-from pmr.wfctrl.core import BaseWorkspace
-from pmr.wfctrl.core import Workspace
-from pmr.wfctrl.core import CmdWorkspace
-from pmr.wfctrl.cmd import DemoDvcsCmd
+from pmr2.wfctrl import core
+from pmr2.wfctrl.core import BaseCmd
+from pmr2.wfctrl.core import BaseDvcsCmd
+from pmr2.wfctrl.core import BaseWorkspace
+from pmr2.wfctrl.core import Workspace
+from pmr2.wfctrl.core import CmdWorkspace
+from pmr2.wfctrl.cmd import DemoDvcsCmd
 
-from pmr.wfctrl.testing.base import CoreTestCase
-from pmr.wfctrl.testing.base import CoreTests
+from pmr2.wfctrl.testing.base import CoreTestCase
+from pmr2.wfctrl.testing.base import CoreTests
 
 
 class CoreCmdRegistrationTestCase(TestCase):

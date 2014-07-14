@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import os
 
-version = '0.1.0'
+version = '0.2'
 
 long_description = (
     open('README.rst').read()
@@ -9,7 +9,7 @@ long_description = (
     open(os.path.join('docs', 'CHANGES.rst')).read()
     + '\n')
 
-setup(name='pmr.wfctrl',
+setup(name='pmr2.wfctrl',
       version=version,
       description="Workflow controller",
       long_description=long_description,
@@ -21,11 +21,11 @@ setup(name='pmr.wfctrl',
       keywords='',
       author='',
       author_email='',
-      url='http://github.com/PMR/pmr.wfctrl',
+      url='http://github.com/PMR/pmr2.wfctrl',
       license='gpl',
       packages=find_packages('src'),
       package_dir = {'': 'src'},
-      namespace_packages=['pmr'],
+      namespace_packages=['pmr2'],
       include_package_data=True,
       zip_safe=False,
       install_requires=[
