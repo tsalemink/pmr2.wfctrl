@@ -9,7 +9,7 @@ install:
   - pip install nose coverage
   - python setup.py develop
 script: 
-  - nosetests --with-coverage --cover-package=pmr.wfctrl --with-doctest --doctest-options=+ELLIPSIS
+  - nosetests --with-coverage --cover-package=pmr2.wfctrl --with-doctest --doctest-options=+ELLIPSIS
 after_success:
   - pip install coveralls
   - coveralls
