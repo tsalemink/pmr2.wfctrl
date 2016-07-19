@@ -1,7 +1,9 @@
 from setuptools import setup, find_packages
 import os
+from pmr2 import wfctrl
 
-version = '0.3'
+
+version = wfctrl.__version__
 
 long_description = (
     open('README.rst').read()
