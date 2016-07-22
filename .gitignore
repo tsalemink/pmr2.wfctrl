@@ -14,3 +14,4 @@
 .env*
 .installed.cfg
 .idea/
+.DS_Store
