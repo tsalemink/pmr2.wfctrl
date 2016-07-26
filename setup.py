@@ -1,5 +1,8 @@
+import sys
 from setuptools import setup, find_packages
 import os
+
+sys.path.append('src')
 from pmr2 import wfctrl
 
 
