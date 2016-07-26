@@ -32,6 +32,7 @@ setup(name='pmr2.wfctrl',
       zip_safe=False,
       install_requires=[
           'setuptools',
+          'dulwich',
           # -*- Extra requirements: -*-
       ],
       entry_points="""

@@ -2,8 +2,10 @@ import sys
 
 if sys.version_info > (3, 0): # pragma: no cover
     from urllib.parse import urlsplit, urlunsplit
+    from io import StringIO
 else: # pragma: no cover
     from urlparse import urlsplit, urlunsplit
+    from StringIO import StringIO
 
 def set_url_cred(url, username=None, password=None,
         _protocols=('http', 'https')):
@@ -20,3 +22,9 @@ def set_url_cred(url, username=None, password=None,
     urlparts[1] = '%s:%s@%s' % (username, password, urlparts[1])
 
     return urlunsplit(urlparts)
+
+
+class DecodableStringIO(StringIO):
+
+    def decode(self, codec='utf-8'):
+        return self

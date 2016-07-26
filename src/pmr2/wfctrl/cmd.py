@@ -1,22 +1,36 @@
 import logging
-from os.path import join
+from os.path import join, isdir
+import os
 import sys
 
 if sys.version_info > (3, 0): # pragma: no cover
     from configparser import ConfigParser
-    from io import StringIO
 else: # pragma: no cover
     from ConfigParser import ConfigParser
-    # io.StringIO in python2.7 is not ready for the above.
-    from StringIO import StringIO
 
-from pmr2.wfctrl.core import BaseDvcsCmd, register_cmd
-from pmr2.wfctrl.utils import set_url_cred
+from pmr2.wfctrl.core import BaseDvcsCmdBin, register_cmd, BaseDvcsCmd
+from pmr2.wfctrl.utils import set_url_cred, DecodableStringIO
+
+try:
+    from dulwich import porcelain
+    # For monkey patching Dulwich
+    import dulwich.porcelain
+    from dulwich.errors import NotGitRepository
+    from dulwich.repo import Repo
+    from dulwich.client import get_transport_and_path
+    from dulwich.client import HttpGitClient
+
+    default_bytes_err_stream = getattr(sys.stderr, 'buffer', sys.stderr)
+    dulwich_available = True
+
+except ImportError:
+    dulwich_available = False
+
 
 logger = logging.getLogger(__name__)
 
 
-class DemoDvcsCmd(BaseDvcsCmd):
+class DemoDvcsCmd(BaseDvcsCmdBin):
 
     binary = 'vcs'
     marker = '.marker'
@@ -53,7 +67,7 @@ class DemoDvcsCmd(BaseDvcsCmd):
         self.queue.append([self.binary, 'push'])
 
 
-class MercurialDvcsCmd(BaseDvcsCmd):
+class MercurialDvcsCmd(BaseDvcsCmdBin):
 
     cmd_binary = 'hg'
     name = 'mercurial'
@@ -128,7 +142,7 @@ class MercurialDvcsCmd(BaseDvcsCmd):
         return self.execute(*args)
 
 
-class GitDvcsCmd(BaseDvcsCmd):
+class GitDvcsCmd(BaseDvcsCmdBin):
 
     cmd_binary = 'git'
     name = 'git'
@@ -208,7 +222,7 @@ class GitDvcsCmd(BaseDvcsCmd):
         return self.execute(*args)
 
     def reset_to_remote(self, workspace, branch=None):
-        # XXX not actually resetting to reomte
+        # XXX not actually resetting to remote
         # XXX assuming 'master' is the current branch
         if branch is None:
             branch = 'master'
@@ -216,8 +230,231 @@ class GitDvcsCmd(BaseDvcsCmd):
         return self.execute(*args)
 
 
+def porcelain_remote(repo='.', verbose=False, outstream=sys.stdout):
+    from dulwich.repo import Repo
+
+    r = Repo(repo)
+    logger.debug('porcelain.remote - {0} and '.format(repo))
+    config = r.get_config()
+    logger.debug('porcelain.remote - {0} and '.format(config))
+    # logger.debug('porcelain.remote - {0} and '.format(config.get(('remote', 'origin'), 'url')))
+    for section in config.itersections() or []:
+        logger.debug('porcelain remote = {0} - {1}'.format(section[0], section[1] if len(section) > 1 else 'empty'))
+        if section[0] == 'remote':
+            if verbose:
+                logger.debug('porcelain remote = {0}'.format(config.get(section, 'url')))
+                outstream.write('{0}   {1} (fetch)\n'.format(section[1], config.get(section, 'url')))
+            else:
+                outstream.write(section[1])
+
+
+def porcelain_remote_rm(repo, name):
+    from dulwich.repo import Repo
+
+    delete_section = None
+    r = Repo(repo)
+    config = r.get_config()
+    for section in config.itersections():
+        if section[0] == 'remote' and len(section) > 1 and section[1] == name:
+            delete_section = section
+
+    if delete_section is not None:
+        del config[delete_section]
+        config.write_to_path()
+
+
+def porcelain_remote_add(repo, name, url):
+    from dulwich.repo import Repo
+
+    r = Repo(repo)
+    config = r.get_config()
+
+    # Add new entries for remote
+    config.set(('remote', name), 'url', url)
+    config.set(('remote', name), 'fetch', "+refs/heads/*:refs/remotes/{0}/*".format(name))
+
+    # Write to disk
+    config.write_to_path()
+
+
+def porcelain_clone(source, target=None, bare=False, checkout=None, errstream=default_bytes_err_stream, outstream=None):
+    """Clone a local or remote git repository.
+
+    :param source: Path or URL for source repository
+    :param target: Path to target repository (optional)
+    :param bare: Whether or not to create a bare repository
+    :param errstream: Optional stream to write progress to
+    :param outstream: Optional stream to write progress to (deprecated)
+    :return: The new repository
+    """
+    if outstream is not None:
+        import warnings
+        warnings.warn("outstream= has been deprecated in favour of errstream=.", DeprecationWarning,
+                stacklevel=3)
+        errstream = outstream
+
+    if checkout is None:
+        checkout = (not bare)
+    if checkout and bare:
+        raise ValueError("checkout and bare are incompatible")
+    client, host_path = get_transport_and_path(source)
+
+    if target is None:
+        target = host_path.split("/")[-1]
+
+    if not os.path.exists(target):
+        os.mkdir(target)
+
+    if bare:
+        r = Repo.init_bare(target)
+    else:
+        r = Repo.init(target)
+    try:
+        remote_refs = client.fetch(host_path, r,
+            determine_wants=r.object_store.determine_wants_all,
+            progress=errstream.write)
+        if checkout:
+            errstream.write(b'Checking out HEAD\n')
+            if b"HEAD" in remote_refs:
+                r[b"HEAD"] = remote_refs[b"HEAD"]
+                r.reset_index()
+            else:
+                errstream.write('Cloning empty repository?')
+    except:
+        r.close()
+        raise
+
+    return r
+
+
+def httpgitclient_http_request(self, url, headers={}, data=None):
+    import urllib2
+    import base64
+    from dulwich.errors import GitProtocolError
+    from urlparse import urlparse
+    parsed = urlparse(url)
+    if parsed.username is not None:
+        url = url.replace('{0}:{1}@'.format(parsed.username, parsed.password), '')
+
+    req = urllib2.Request(url, headers=headers, data=data)
+    if parsed.username is not None:
+        req.add_header('Authorization', b'Basic ' + base64.b64encode(parsed.username + b':' + parsed.password))
+    try:
+        resp = self.opener.open(req)
+    except urllib2.HTTPError as e:
+        if e.code == 404:
+            raise NotGitRepository()
+        if e.code != 200:
+            raise GitProtocolError("unexpected http response %d" % e.code)
+    return resp
+
+
+if dulwich_available:
+    porcelain.remote = porcelain_remote
+    porcelain.remote_rm = porcelain_remote_rm
+    porcelain.remote_add = porcelain_remote_add
+    porcelain.clone = porcelain_clone
+    HttpGitClient._http_request = httpgitclient_http_request
+
+class DulwichDvcsCmd(BaseDvcsCmd):
+
+    name = 'dulwich'
+    marker = '.git'
+
+    default_remote = 'origin'
+    _committer = (None, None)
+
+    @classmethod
+    def available(cls):
+        try:
+            from dulwich import porcelain
+        except ImportError:
+            return False
+
+        return True
+
+    def write_remote(self, workspace, target_remote=None, **kw):
+        pass
+
+    def push(self, workspace, username=None, password=None, branches=None, **kw):
+        outstream = DecodableStringIO()
+        errstream = DecodableStringIO()
+        push_target = self.get_remote(workspace,
+            username=username, password=password)
+        try:
+            # push_target = "file://" + push_target
+            porcelain.push(repo=workspace.working_dir, remote_location=push_target, refspecs=[], outstream=outstream, errstream=errstream)
+        except NotGitRepository as e:
+            errstream.write('Not a Git repository {0}'.format(push_target))
+
+        return outstream.getvalue(), errstream.getvalue()
+
+    def clone(self, workspace, **kw):
+        porcelain.clone(self.remote, workspace.working_dir)
+
+    def reset_to_remote(self, workspace, branch=None):
+        outstream = DecodableStringIO()
+        errstream = DecodableStringIO()
+        # XXX not actually resetting to remote
+        # XXX assuming 'master' is the current branch
+        if branch is None:
+            branch = 'master'
+
+        porcelain.reset(workspace.working_dir, 'hard')
+        return outstream.getvalue(), errstream.getvalue()
+
+    def init_new(self, workspace, **kw):
+        # Dulwich.porcelain doesn't re-initialise a repository as true git does.
+        if not isdir(join(workspace.working_dir, self.marker)):
+            porcelain.init(path=workspace.working_dir)
+
+    def read_remote(self, workspace, target_remote=None, **kw):
+        target_remote = target_remote or self.default_remote
+        outstream = DecodableStringIO()
+        porcelain.remote(repo=workspace.working_dir, verbose=True, outstream=outstream)  #self.execute(*self._args(workspace, 'remote', '-v'))
+        if outstream:
+            for lines in outstream.getvalue().splitlines():
+                remotes = lines.decode('utf8', errors='replace').split()
+                logger.debug("remotes: {0}".format(remotes))
+                if remotes[0] == target_remote:
+                    # XXX assuming first one is correct
+                    return remotes[1]
+
+        logger.debug("read_remote returning None.")
+
+    def write_remote(self, workspace, target_remote=None, **kw):
+        target_remote = target_remote or self.default_remote
+        porcelain.remote_rm(workspace.working_dir, target_remote)
+        porcelain.remote_add(workspace.working_dir, target_remote, self.remote)
+
+    def pull(self, workspace, username=None, password=None, **kw):
+        outstream = DecodableStringIO()
+        errstream = DecodableStringIO()
+        # XXX origin may be undefined
+        target = self.get_remote(workspace,
+            username=username, password=password)
+        # XXX assuming repo is clean
+        try:
+            porcelain.pull(workspace.working_dir, target, outstream=outstream, errstream=errstream)
+        except NotGitRepository as e:
+            errstream.write('Not a Git repository {0}'.format(target))
+
+        return outstream.getvalue(), errstream.getvalue()
+
+    def set_committer(self, name, email, **kw):
+        self._committer = '%s <%s>' % (name, email)
+
+    def commit(self, workspace, message, **kw):
+        porcelain.commit(repo=workspace.working_dir, message=message, committer=self._committer)
+
+    def add(self, workspace, path, **kw):
+        if workspace.working_dir in path:
+            path = path.replace(workspace.working_dir + os.sep, '')
+        porcelain.add(repo=workspace.working_dir, paths=[path])
+
+
 def _register():
-    register_cmd(MercurialDvcsCmd, GitDvcsCmd)
+    register_cmd(MercurialDvcsCmd, GitDvcsCmd, DulwichDvcsCmd)
 
 register = _register
 register()

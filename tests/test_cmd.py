@@ -1,17 +1,30 @@
 from unittest import TestCase, skipIf
 
 import os
+import sys
+import logging
 from os.path import join, isdir, basename
 import tempfile
 import shutil
+
+try:
+    from dulwich import porcelain
+except ImportError:
+    pass
 
 from pmr2.wfctrl.core import get_cmd_by_name
 from pmr2.wfctrl.core import CmdWorkspace
 from pmr2.wfctrl.cmd import GitDvcsCmd
 from pmr2.wfctrl.cmd import MercurialDvcsCmd
+from pmr2.wfctrl.cmd import DulwichDvcsCmd
+from pmr2.wfctrl.utils import DecodableStringIO
 
 from pmr2.wfctrl.testing.base import CoreTestCase
 from pmr2.wfctrl.testing.base import CoreTests
+
+
+logger = logging.getLogger(__name__)
+
 
 def fail(*a, **kw):
     raise Exception()
@@ -20,12 +33,15 @@ def fail(*a, **kw):
 class RawCmdTests(object):
 
     cmdcls = None
+    _trap_cmds = ['push', 'pull', 'clone']
 
-    def TrapCmd(self, _trap_cmds=None, *a, **kw):
+    def TrapCmd(self, *a, **kw):
+        trap_cmds = self._trap_cmds
+
+
         class TrapCmd(self.cmdcls):
-            trap_cmds = _trap_cmds or ['push', 'pull', 'clone']
             def execute(self, *a, **kw):
-                for t in self.trap_cmds:
+                for t in trap_cmds:
                     if t in a:
                         return (a, kw)
                 return super(TrapCmd, self).execute(*a, **kw)
@@ -134,6 +150,7 @@ class RawCmdTests(object):
 
         self.cmd.remote = 'http://example.com/repo'
         self.cmd.write_remote(self.workspace)
+
         push_target = self.cmd.get_remote(self.workspace)
         self.assertEqual(push_target, 'http://example.com/repo')
         push_target = self.cmd.get_remote(self.workspace,
@@ -181,7 +198,8 @@ class RawCmdTests(object):
         cmd.write_remote(workspace)
         workspace = CmdWorkspace(self.workspace_dir, cmd)
         result = cmd.push(workspace, username='username', password='password')
-        self.assertTrue('http://username:password@example.com/' in result[0])
+        self.assertTrue('http://username:password@example.com/' in result[0] or
+                        'http://username:password@example.com/' in result[1])
 
     def test_pull_url_with_creds(self):
         workspace = CmdWorkspace(self.workspace_dir, self.cmd)
@@ -189,7 +207,8 @@ class RawCmdTests(object):
         cmd.write_remote(workspace)
         workspace = CmdWorkspace(self.workspace_dir, cmd)
         result = cmd.pull(workspace, username='username', password='password')
-        self.assertTrue('http://username:password@example.com/' in result[0])
+        self.assertTrue('http://username:password@example.com/' in result[0] or
+                        'http://username:password@example.com/' in result[1])
 
     def test_reset_to_remote(self):
         self.cmd.init_new(self.workspace)
@@ -279,3 +298,48 @@ class MercurialDvcsCmdTestCase(CoreTestCase, RawCmdTests):
 
     def test_get_cmd_by_name(self):
         self.assertEqual(get_cmd_by_name('mercurial'), self.cmdcls)
+
+
+@skipIf(not DulwichDvcsCmd.available(), 'dulwich is not available')
+class DulwichDvcsCmdTestCase(CoreTestCase, RawCmdTests):
+
+    cmdcls = DulwichDvcsCmd
+    _trap_cmds = []
+
+    def setUp(self):
+        super(DulwichDvcsCmdTestCase, self).setUp()
+        self.cmd = DulwichDvcsCmd()
+        self.workspace = CmdWorkspace(self.workspace_dir, self.cmd)
+
+    def _make_remote(self):
+        target = os.path.join(self.working_dir, 'remote')
+        porcelain.init(path=target, bare=True)
+        return target
+
+    def _log(self, workspace=None):
+        outstream = DecodableStringIO()
+        porcelain.log(repo=self.workspace.working_dir, outstream=outstream)
+        return ''.join(outstream.getvalue()), ''.join(DecodableStringIO().getvalue())
+
+    def _ls_root(self, workspace=None):
+        from dulwich.repo import Repo
+        outstream = DecodableStringIO()
+        errstream = DecodableStringIO()
+        r = Repo(self.workspace.working_dir)
+        index = r.open_index()
+        for blob in index.iterblobs():
+            outstream.write('\t'.join(map(str, blob)) + '\n')
+
+        return ''.join(outstream.getvalue()), ''.join(errstream.getvalue())
+
+    def test_get_cmd_by_name(self):
+        pass
+
+    def test_auto_init(self):
+        pass
+
+    def test_decodable(self):
+        d = DecodableStringIO()
+        d.write('junk')
+        s = d.decode()
+        self.assertEqual(s, d)
