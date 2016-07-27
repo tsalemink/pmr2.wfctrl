@@ -16,7 +16,7 @@ class CoreTestCase(TestCase):
     def tearDown(self):
         shutil.rmtree(self.working_dir, onerror=handle_access_error)
 
-    def make_workspace(self):
+    def make_workspace(self):  # pragma: no cover
         raise NotImplementedError
 
 
@@ -108,7 +108,7 @@ class CoreTests(object):
         self.assertEqual(wks.get_tracked_subpaths(), [])
 
 
-def handle_access_error(func, path, exc_info):
+def handle_access_error(func, path, exc_info):  # pragma: no cover
     """
     Error handler for ``shutil.rmtree``.
 

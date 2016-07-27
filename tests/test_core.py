@@ -5,6 +5,7 @@ from os.path import join
 
 from pmr2.wfctrl import core
 from pmr2.wfctrl.core import BaseCmd
+from pmr2.wfctrl.core import BaseDvcsCmd
 from pmr2.wfctrl.core import BaseDvcsCmdBin
 from pmr2.wfctrl.core import BaseWorkspace
 from pmr2.wfctrl.core import Workspace
@@ -63,6 +64,14 @@ class BaseCmdTestCase(TestCase):
 
 
 class BaseDvcsCmdTestCase(TestCase):
+
+    def test_base_dvcs_cmd(self):
+        cmd = BaseDvcsCmd()
+        self.assertRaises(NotImplementedError, BaseDvcsCmd.available)
+        self.assertRaises(NotImplementedError, cmd.execute)
+
+
+class BaseDvcsCmdBinTestCase(TestCase):
 
     def test_dvcs_cmd_binary(self):
         self.assertFalse(BaseDvcsCmdBin.available())

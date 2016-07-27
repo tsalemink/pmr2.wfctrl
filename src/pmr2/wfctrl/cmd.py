@@ -238,9 +238,6 @@ class DulwichDvcsCmd(BaseDvcsCmd):
 
         return True
 
-    def write_remote(self, workspace, target_remote=None, **kw):
-        pass
-
     def push(self, workspace, username=None, password=None, branches=None, **kw):
         outstream = BytesIO()
         errstream = BytesIO()
