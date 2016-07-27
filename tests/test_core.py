@@ -2,8 +2,6 @@ from unittest import TestCase
 
 import os
 from os.path import join
-import tempfile
-import shutil
 
 from pmr2.wfctrl import core
 from pmr2.wfctrl.core import BaseCmd

@@ -4,8 +4,11 @@ import os
 import sys
 import logging
 from os.path import join, isdir, basename
-import tempfile
-import shutil
+
+if sys.version_info > (3, 0):  # pragma: no cover
+    from io import StringIO
+else:  # pragma: no cover
+    from StringIO import StringIO
 
 try:
     from dulwich import porcelain
@@ -17,7 +20,6 @@ from pmr2.wfctrl.core import CmdWorkspace
 from pmr2.wfctrl.cmd import GitDvcsCmd
 from pmr2.wfctrl.cmd import MercurialDvcsCmd
 from pmr2.wfctrl.cmd import DulwichDvcsCmd
-from pmr2.wfctrl.utils import DecodableStringIO
 
 from pmr2.wfctrl.testing.base import CoreTestCase
 from pmr2.wfctrl.testing.base import CoreTests
@@ -317,28 +319,22 @@ class DulwichDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         return target
 
     def _log(self, workspace=None):
-        outstream = DecodableStringIO()
+        outstream = StringIO()
         porcelain.log(repo=self.workspace.working_dir, outstream=outstream)
-        return (''.join(outstream.getvalue()).encode('utf8'), b'',)
+        return ''.join(outstream.getvalue()).encode(), b''
 
     def _ls_root(self, workspace=None):
         from dulwich.repo import Repo
-        outstream = DecodableStringIO()
+        outstream = StringIO()
         r = Repo(self.workspace.working_dir)
         index = r.open_index()
         for blob in index.iterblobs():
             outstream.write('\t'.join(map(str, blob)) + '\n')
 
-        return (''.join(outstream.getvalue()).encode('utf8'), b'',)
+        return ''.join(outstream.getvalue()).encode(), b''
 
     def test_get_cmd_by_name(self):
         pass
 
     def test_auto_init(self):
         pass
-
-    def test_decodable(self):
-        d = DecodableStringIO()
-        d.write('junk')
-        s = d.decode()
-        self.assertEqual(s, d)

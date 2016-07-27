@@ -5,24 +5,16 @@ import sys
 
 if sys.version_info > (3, 0):  # pragma: no cover
     from configparser import ConfigParser
+    from io import BytesIO
 else:  # pragma: no cover
     from ConfigParser import ConfigParser
+    from BytesIO import BytesIO
 
 from pmr2.wfctrl.core import BaseDvcsCmdBin, register_cmd, BaseDvcsCmd
-from pmr2.wfctrl.utils import set_url_cred, DecodableStringIO
 
 try:
     from dulwich import porcelain
-    # For monkey patching Dulwich
-    import dulwich.porcelain
     from dulwich.errors import NotGitRepository
-    from dulwich.repo import Repo
-    from dulwich.client import get_transport_and_path
-    from dulwich.client import HttpGitClient
-
-    default_bytes_err_stream = getattr(sys.stderr, 'buffer', sys.stderr)
-    dulwich_available = True
-
 except ImportError:  # pragma: no cover
     dulwich_available = False
 
@@ -230,134 +222,6 @@ class GitDvcsCmd(BaseDvcsCmdBin):
         return self.execute(*args)
 
 
-def porcelain_remote(repo='.', verbose=False, outstream=sys.stdout):
-    from dulwich.repo import Repo
-
-    r = Repo(repo)
-    logger.debug('porcelain.remote - {0} and '.format(repo))
-    config = r.get_config()
-    logger.debug('porcelain.remote - {0} and '.format(config))
-    # logger.debug('porcelain.remote - {0} and '.format(config.get(('remote', 'origin'), 'url')))
-    for section in config.itersections() or []:
-        logger.debug('porcelain remote = {0} - {1}'.format(section[0], section[1] if len(section) > 1 else 'empty'))
-        if section[0] == 'remote':
-            if verbose:
-                logger.debug('porcelain remote = {0}'.format(config.get(section, 'url')))
-                outstream.write('{0}   {1} (fetch)\n'.format(section[1], config.get(section, 'url')))
-            else:  # pragma: no cover
-                outstream.write(section[1])
-
-
-def porcelain_remote_rm(repo, name):
-    from dulwich.repo import Repo
-
-    delete_section = None
-    r = Repo(repo)
-    config = r.get_config()
-    for section in config.itersections():
-        if section[0] == 'remote' and len(section) > 1 and section[1] == name:
-            delete_section = section
-
-    if delete_section is not None:
-        del config[delete_section]
-        config.write_to_path()
-
-
-def porcelain_remote_add(repo, name, url):
-    from dulwich.repo import Repo
-
-    r = Repo(repo)
-    config = r.get_config()
-
-    # Add new entries for remote
-    config.set((b'remote', name.encode('utf8')), b'url', url.encode('utf8'))
-    config.set(
-        (b'remote', name.encode('utf8')), b'fetch',
-        "+refs/heads/*:refs/remotes/{0}/*".format(name).encode('utf8'))
-
-    # Write to disk
-    config.write_to_path()
-
-
-def porcelain_clone(source, target=None, bare=False, checkout=None, errstream=default_bytes_err_stream, outstream=None):
-    """Clone a local or remote git repository.
-
-    :param source: Path or URL for source repository
-    :param target: Path to target repository (optional)
-    :param bare: Whether or not to create a bare repository
-    :param errstream: Optional stream to write progress to
-    :param outstream: Optional stream to write progress to (deprecated)
-    :return: The new repository
-    """
-    if outstream is not None:  # pragma: no cover
-        import warnings
-        warnings.warn("outstream= has been deprecated in favour of errstream=.", DeprecationWarning,
-                stacklevel=3)
-        errstream = outstream
-
-    if checkout is None:
-        checkout = (not bare)
-    if checkout and bare:  # pragma: no cover
-        raise ValueError("checkout and bare are incompatible")
-    client, host_path = get_transport_and_path(source)
-
-    if target is None:
-        target = host_path.split("/")[-1]
-
-    if not os.path.exists(target):
-        os.mkdir(target)
-
-    if bare:
-        r = Repo.init_bare(target)
-    else:
-        r = Repo.init(target)
-    try:
-        remote_refs = client.fetch(host_path, r,
-            determine_wants=r.object_store.determine_wants_all,
-            progress=errstream.write)
-        if checkout:
-            errstream.write(b'Checking out HEAD\n')
-            if b"HEAD" in remote_refs:
-                r[b"HEAD"] = remote_refs[b"HEAD"]
-                r.reset_index()
-            else:
-                errstream.write(b'Cloning empty repository?')
-    except:  # pragma: no cover
-        r.close()
-        raise
-
-    return r
-
-
-def httpgitclient_http_request(self, url, headers={}, data=None):
-    import urllib2
-    import base64
-    from dulwich.errors import GitProtocolError
-    from urlparse import urlparse
-    parsed = urlparse(url)
-    if parsed.username is not None:
-        url = url.replace('{0}:{1}@'.format(parsed.username, parsed.password), '')
-
-    req = urllib2.Request(url, headers=headers, data=data)
-    if parsed.username is not None:
-        req.add_header('Authorization', b'Basic ' + base64.b64encode(parsed.username + b':' + parsed.password))
-    try:
-        resp = self.opener.open(req)
-    except urllib2.HTTPError as e:
-        if e.code == 404:
-            raise NotGitRepository()
-        if e.code != 200:  # pragma: no cover
-            raise GitProtocolError("unexpected http response %d" % e.code)
-    return resp
-
-
-if dulwich_available:
-    porcelain.remote = porcelain_remote
-    porcelain.remote_rm = porcelain_remote_rm
-    porcelain.remote_add = porcelain_remote_add
-    porcelain.clone = porcelain_clone
-    HttpGitClient._http_request = httpgitclient_http_request
-
 class DulwichDvcsCmd(BaseDvcsCmd):
 
     name = 'dulwich'
@@ -379,31 +243,31 @@ class DulwichDvcsCmd(BaseDvcsCmd):
         pass
 
     def push(self, workspace, username=None, password=None, branches=None, **kw):
-        outstream = DecodableStringIO()
-        errstream = DecodableStringIO()
+        outstream = BytesIO()
+        errstream = BytesIO()
         push_target = self.get_remote(workspace,
             username=username, password=password)
         try:
             # push_target = "file://" + push_target
             porcelain.push(repo=workspace.working_dir, remote_location=push_target, refspecs=[], outstream=outstream, errstream=errstream)
         except NotGitRepository as e:
-            errstream.write('Not a Git repository {0}'.format(push_target))
+            errstream.write(b'Not a Git repository ' + push_target.encode())
 
-        return outstream.getvalue(), errstream.getvalue()
+        return outstream.getvalue().decode(), errstream.getvalue().decode()
 
     def clone(self, workspace, **kw):
         porcelain.clone(self.remote, workspace.working_dir)
 
     def reset_to_remote(self, workspace, branch=None):
-        outstream = DecodableStringIO()
-        errstream = DecodableStringIO()
+        outstream = BytesIO()
+        errstream = BytesIO()
         # XXX not actually resetting to remote
         # XXX assuming 'master' is the current branch
         if branch is None:
             branch = 'master'
 
         porcelain.reset(workspace.working_dir, 'hard', committish=b'HEAD')
-        return outstream.getvalue(), errstream.getvalue()
+        return outstream.getvalue().decode(), errstream.getvalue().decode()
 
     def init_new(self, workspace, **kw):
         # Dulwich.porcelain doesn't re-initialise a repository as true git does.
@@ -412,38 +276,38 @@ class DulwichDvcsCmd(BaseDvcsCmd):
 
     def read_remote(self, workspace, target_remote=None, **kw):
         target_remote = target_remote or self.default_remote
-        outstream = DecodableStringIO()
+        outstream = BytesIO()
         # self.execute(*self._args(workspace, 'remote', '-v'))
         porcelain.remote(
             repo=workspace.working_dir, verbose=True, outstream=outstream)
         if outstream:
             for lines in outstream.getvalue().splitlines():
-                remotes = lines.decode('utf8', errors='replace').split()
+                remotes = lines.split()  # .decode('utf8', errors='replace')
                 logger.debug("remotes: {0}".format(remotes))
-                if remotes[0] == target_remote:
+                if remotes[0] == target_remote.encode():
                     # XXX assuming first one is correct
-                    return remotes[1]
+                    return remotes[1].decode()
 
         logger.debug("read_remote returning None.")
 
     def write_remote(self, workspace, target_remote=None, **kw):
         target_remote = target_remote or self.default_remote
-        porcelain.remote_rm(workspace.working_dir, target_remote)
-        porcelain.remote_add(workspace.working_dir, target_remote, self.remote)
+        porcelain.remote_rm(workspace.working_dir, target_remote.encode())
+        porcelain.remote_add(workspace.working_dir, target_remote.encode(), self.remote.encode('utf-8'))
 
     def pull(self, workspace, username=None, password=None, **kw):
-        outstream = DecodableStringIO()
-        errstream = DecodableStringIO()
+        outstream = BytesIO()
+        errstream = BytesIO()
         # XXX origin may be undefined
         target = self.get_remote(workspace,
             username=username, password=password)
         # XXX assuming repo is clean
         try:
-            porcelain.pull(workspace.working_dir, target, outstream=outstream, errstream=errstream)
+            porcelain.pull(workspace.working_dir, target.encode(), outstream=outstream, errstream=errstream)
         except NotGitRepository as e:
-            errstream.write('Not a Git repository {0}'.format(target))
+            errstream.write(b'Not a Git repository ' + target.encode())
 
-        return outstream.getvalue(), errstream.getvalue()
+        return outstream.getvalue().decode(), errstream.getvalue().decode()
 
     def set_committer(self, name, email, **kw):
         self._committer = '%s <%s>' % (name, email)
