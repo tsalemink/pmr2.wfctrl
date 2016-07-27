@@ -270,8 +270,10 @@ def porcelain_remote_add(repo, name, url):
     config = r.get_config()
 
     # Add new entries for remote
-    config.set(('remote', name), 'url', url)
-    config.set(('remote', name), 'fetch', "+refs/heads/*:refs/remotes/{0}/*".format(name))
+    config.set((b'remote', name.encode('utf8')), b'url', url.encode('utf8'))
+    config.set(
+        (b'remote', name.encode('utf8')), b'fetch',
+        "+refs/heads/*:refs/remotes/{0}/*".format(name).encode('utf8'))
 
     # Write to disk
     config.write_to_path()
@@ -319,7 +321,7 @@ def porcelain_clone(source, target=None, bare=False, checkout=None, errstream=de
                 r[b"HEAD"] = remote_refs[b"HEAD"]
                 r.reset_index()
             else:
-                errstream.write('Cloning empty repository?')
+                errstream.write(b'Cloning empty repository?')
     except:
         r.close()
         raise
@@ -400,7 +402,7 @@ class DulwichDvcsCmd(BaseDvcsCmd):
         if branch is None:
             branch = 'master'
 
-        porcelain.reset(workspace.working_dir, 'hard')
+        porcelain.reset(workspace.working_dir, 'hard', committish=b'HEAD')
         return outstream.getvalue(), errstream.getvalue()
 
     def init_new(self, workspace, **kw):
@@ -411,7 +413,9 @@ class DulwichDvcsCmd(BaseDvcsCmd):
     def read_remote(self, workspace, target_remote=None, **kw):
         target_remote = target_remote or self.default_remote
         outstream = DecodableStringIO()
-        porcelain.remote(repo=workspace.working_dir, verbose=True, outstream=outstream)  #self.execute(*self._args(workspace, 'remote', '-v'))
+        # self.execute(*self._args(workspace, 'remote', '-v'))
+        porcelain.remote(
+            repo=workspace.working_dir, verbose=True, outstream=outstream)
         if outstream:
             for lines in outstream.getvalue().splitlines():
                 remotes = lines.decode('utf8', errors='replace').split()
@@ -445,7 +449,9 @@ class DulwichDvcsCmd(BaseDvcsCmd):
         self._committer = '%s <%s>' % (name, email)
 
     def commit(self, workspace, message, **kw):
-        porcelain.commit(repo=workspace.working_dir, message=message, committer=self._committer)
+        porcelain.commit(
+            repo=workspace.working_dir, message=message.encode('utf8'),
+            committer=self._committer.encode('utf8'))
 
     def add(self, workspace, path, **kw):
         if workspace.working_dir in path:

@@ -319,18 +319,17 @@ class DulwichDvcsCmdTestCase(CoreTestCase, RawCmdTests):
     def _log(self, workspace=None):
         outstream = DecodableStringIO()
         porcelain.log(repo=self.workspace.working_dir, outstream=outstream)
-        return ''.join(outstream.getvalue()), ''.join(DecodableStringIO().getvalue())
+        return (''.join(outstream.getvalue()).encode('utf8'), b'',)
 
     def _ls_root(self, workspace=None):
         from dulwich.repo import Repo
         outstream = DecodableStringIO()
-        errstream = DecodableStringIO()
         r = Repo(self.workspace.working_dir)
         index = r.open_index()
         for blob in index.iterblobs():
             outstream.write('\t'.join(map(str, blob)) + '\n')
 
-        return ''.join(outstream.getvalue()), ''.join(errstream.getvalue())
+        return (''.join(outstream.getvalue()).encode('utf8'), b'',)
 
     def test_get_cmd_by_name(self):
         pass
