@@ -2,7 +2,7 @@ import sys
 from setuptools import setup, find_packages
 import os
 
-sys.path.append('src')
+sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'src'))
 from pmr2 import wfctrl
 
 
