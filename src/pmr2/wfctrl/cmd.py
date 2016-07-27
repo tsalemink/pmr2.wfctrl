@@ -3,9 +3,9 @@ from os.path import join, isdir
 import os
 import sys
 
-if sys.version_info > (3, 0): # pragma: no cover
+if sys.version_info > (3, 0):  # pragma: no cover
     from configparser import ConfigParser
-else: # pragma: no cover
+else:  # pragma: no cover
     from ConfigParser import ConfigParser
 
 from pmr2.wfctrl.core import BaseDvcsCmdBin, register_cmd, BaseDvcsCmd
@@ -23,7 +23,7 @@ try:
     default_bytes_err_stream = getattr(sys.stderr, 'buffer', sys.stderr)
     dulwich_available = True
 
-except ImportError:
+except ImportError:  # pragma: no cover
     dulwich_available = False
 
 
@@ -216,7 +216,7 @@ class GitDvcsCmd(BaseDvcsCmdBin):
         args = self._args(workspace, 'push', push_target)
         if not branches:
             args.append('--all')
-        elif isinstance(branches, list):
+        elif isinstance(branches, list):  # pragma: no cover
             args.extend(branches)
 
         return self.execute(*args)
@@ -244,7 +244,7 @@ def porcelain_remote(repo='.', verbose=False, outstream=sys.stdout):
             if verbose:
                 logger.debug('porcelain remote = {0}'.format(config.get(section, 'url')))
                 outstream.write('{0}   {1} (fetch)\n'.format(section[1], config.get(section, 'url')))
-            else:
+            else:  # pragma: no cover
                 outstream.write(section[1])
 
 
@@ -289,7 +289,7 @@ def porcelain_clone(source, target=None, bare=False, checkout=None, errstream=de
     :param outstream: Optional stream to write progress to (deprecated)
     :return: The new repository
     """
-    if outstream is not None:
+    if outstream is not None:  # pragma: no cover
         import warnings
         warnings.warn("outstream= has been deprecated in favour of errstream=.", DeprecationWarning,
                 stacklevel=3)
@@ -297,7 +297,7 @@ def porcelain_clone(source, target=None, bare=False, checkout=None, errstream=de
 
     if checkout is None:
         checkout = (not bare)
-    if checkout and bare:
+    if checkout and bare:  # pragma: no cover
         raise ValueError("checkout and bare are incompatible")
     client, host_path = get_transport_and_path(source)
 
@@ -322,7 +322,7 @@ def porcelain_clone(source, target=None, bare=False, checkout=None, errstream=de
                 r.reset_index()
             else:
                 errstream.write(b'Cloning empty repository?')
-    except:
+    except:  # pragma: no cover
         r.close()
         raise
 
@@ -346,7 +346,7 @@ def httpgitclient_http_request(self, url, headers={}, data=None):
     except urllib2.HTTPError as e:
         if e.code == 404:
             raise NotGitRepository()
-        if e.code != 200:
+        if e.code != 200:  # pragma: no cover
             raise GitProtocolError("unexpected http response %d" % e.code)
     return resp
 
@@ -370,7 +370,7 @@ class DulwichDvcsCmd(BaseDvcsCmd):
     def available(cls):
         try:
             from dulwich import porcelain
-        except ImportError:
+        except ImportError:  # pragma: no cover
             return False
 
         return True
