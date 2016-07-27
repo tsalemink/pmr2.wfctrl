@@ -3,9 +3,9 @@ from os.path import join, isdir
 import os
 import sys
 
-if sys.version_info > (3, 0): # pragma: no cover
+if sys.version_info > (3, 0):  # pragma: no cover
     from configparser import ConfigParser
-else: # pragma: no cover
+else:  # pragma: no cover
     from ConfigParser import ConfigParser
 
 from pmr2.wfctrl.core import BaseDvcsCmdBin, register_cmd, BaseDvcsCmd
@@ -23,7 +23,7 @@ try:
     default_bytes_err_stream = getattr(sys.stderr, 'buffer', sys.stderr)
     dulwich_available = True
 
-except ImportError:
+except ImportError:  # pragma: no cover
     dulwich_available = False
 
 
@@ -216,7 +216,7 @@ class GitDvcsCmd(BaseDvcsCmdBin):
         args = self._args(workspace, 'push', push_target)
         if not branches:
             args.append('--all')
-        elif isinstance(branches, list):
+        elif isinstance(branches, list):  # pragma: no cover
             args.extend(branches)
 
         return self.execute(*args)
@@ -244,7 +244,7 @@ def porcelain_remote(repo='.', verbose=False, outstream=sys.stdout):
             if verbose:
                 logger.debug('porcelain remote = {0}'.format(config.get(section, 'url')))
                 outstream.write('{0}   {1} (fetch)\n'.format(section[1], config.get(section, 'url')))
-            else:
+            else:  # pragma: no cover
                 outstream.write(section[1])
 
 
@@ -270,8 +270,10 @@ def porcelain_remote_add(repo, name, url):
     config = r.get_config()
 
     # Add new entries for remote
-    config.set(('remote', name), 'url', url)
-    config.set(('remote', name), 'fetch', "+refs/heads/*:refs/remotes/{0}/*".format(name))
+    config.set((b'remote', name.encode('utf8')), b'url', url.encode('utf8'))
+    config.set(
+        (b'remote', name.encode('utf8')), b'fetch',
+        "+refs/heads/*:refs/remotes/{0}/*".format(name).encode('utf8'))
 
     # Write to disk
     config.write_to_path()
@@ -287,7 +289,7 @@ def porcelain_clone(source, target=None, bare=False, checkout=None, errstream=de
     :param outstream: Optional stream to write progress to (deprecated)
     :return: The new repository
     """
-    if outstream is not None:
+    if outstream is not None:  # pragma: no cover
         import warnings
         warnings.warn("outstream= has been deprecated in favour of errstream=.", DeprecationWarning,
                 stacklevel=3)
@@ -295,7 +297,7 @@ def porcelain_clone(source, target=None, bare=False, checkout=None, errstream=de
 
     if checkout is None:
         checkout = (not bare)
-    if checkout and bare:
+    if checkout and bare:  # pragma: no cover
         raise ValueError("checkout and bare are incompatible")
     client, host_path = get_transport_and_path(source)
 
@@ -319,8 +321,8 @@ def porcelain_clone(source, target=None, bare=False, checkout=None, errstream=de
                 r[b"HEAD"] = remote_refs[b"HEAD"]
                 r.reset_index()
             else:
-                errstream.write('Cloning empty repository?')
-    except:
+                errstream.write(b'Cloning empty repository?')
+    except:  # pragma: no cover
         r.close()
         raise
 
@@ -344,7 +346,7 @@ def httpgitclient_http_request(self, url, headers={}, data=None):
     except urllib2.HTTPError as e:
         if e.code == 404:
             raise NotGitRepository()
-        if e.code != 200:
+        if e.code != 200:  # pragma: no cover
             raise GitProtocolError("unexpected http response %d" % e.code)
     return resp
 
@@ -368,7 +370,7 @@ class DulwichDvcsCmd(BaseDvcsCmd):
     def available(cls):
         try:
             from dulwich import porcelain
-        except ImportError:
+        except ImportError:  # pragma: no cover
             return False
 
         return True
@@ -400,7 +402,7 @@ class DulwichDvcsCmd(BaseDvcsCmd):
         if branch is None:
             branch = 'master'
 
-        porcelain.reset(workspace.working_dir, 'hard')
+        porcelain.reset(workspace.working_dir, 'hard', committish=b'HEAD')
         return outstream.getvalue(), errstream.getvalue()
 
     def init_new(self, workspace, **kw):
@@ -411,7 +413,9 @@ class DulwichDvcsCmd(BaseDvcsCmd):
     def read_remote(self, workspace, target_remote=None, **kw):
         target_remote = target_remote or self.default_remote
         outstream = DecodableStringIO()
-        porcelain.remote(repo=workspace.working_dir, verbose=True, outstream=outstream)  #self.execute(*self._args(workspace, 'remote', '-v'))
+        # self.execute(*self._args(workspace, 'remote', '-v'))
+        porcelain.remote(
+            repo=workspace.working_dir, verbose=True, outstream=outstream)
         if outstream:
             for lines in outstream.getvalue().splitlines():
                 remotes = lines.decode('utf8', errors='replace').split()
@@ -445,7 +449,9 @@ class DulwichDvcsCmd(BaseDvcsCmd):
         self._committer = '%s <%s>' % (name, email)
 
     def commit(self, workspace, message, **kw):
-        porcelain.commit(repo=workspace.working_dir, message=message, committer=self._committer)
+        porcelain.commit(
+            repo=workspace.working_dir, message=message.encode('utf8'),
+            committer=self._committer.encode('utf8'))
 
     def add(self, workspace, path, **kw):
         if workspace.working_dir in path:
