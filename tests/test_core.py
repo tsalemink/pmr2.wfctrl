@@ -2,12 +2,11 @@ from unittest import TestCase
 
 import os
 from os.path import join
-import tempfile
-import shutil
 
 from pmr2.wfctrl import core
 from pmr2.wfctrl.core import BaseCmd
 from pmr2.wfctrl.core import BaseDvcsCmd
+from pmr2.wfctrl.core import BaseDvcsCmdBin
 from pmr2.wfctrl.core import BaseWorkspace
 from pmr2.wfctrl.core import Workspace
 from pmr2.wfctrl.core import CmdWorkspace
@@ -29,6 +28,7 @@ class CoreCmdRegistrationTestCase(TestCase):
         class TestCmd(BaseCmd):
             marker = '.testmarker'
             name = 'test_cmd'
+
             @classmethod
             def available(self):
                 return True
@@ -65,22 +65,30 @@ class BaseCmdTestCase(TestCase):
 
 class BaseDvcsCmdTestCase(TestCase):
 
+    def test_base_dvcs_cmd(self):
+        cmd = BaseDvcsCmd()
+        self.assertRaises(NotImplementedError, BaseDvcsCmd.available)
+        self.assertRaises(NotImplementedError, cmd.execute)
+
+
+class BaseDvcsCmdBinTestCase(TestCase):
+
     def test_dvcs_cmd_binary(self):
-        self.assertFalse(BaseDvcsCmd.available())
-        self.assertRaises(ValueError, BaseDvcsCmd)
-        self.assertRaises(ValueError, BaseDvcsCmd, cmd_binary='__bad_cmd')
+        self.assertFalse(BaseDvcsCmdBin.available())
+        self.assertRaises(ValueError, BaseDvcsCmdBin)
+        self.assertRaises(ValueError, BaseDvcsCmdBin, cmd_binary='__bad_cmd')
         # assuming this command is available on all systems.
-        self.assertTrue(BaseDvcsCmd.available('python'))
-        self.assertFalse(BaseDvcsCmd.available('__bad_cmd_'))
+        self.assertTrue(BaseDvcsCmdBin.available('python'))
+        self.assertFalse(BaseDvcsCmdBin.available('__bad_cmd_'))
 
         # Pretend we have a binary here too
-        vcs = BaseDvcsCmd(cmd_binary='python')
-        self.assertTrue(isinstance(vcs, BaseDvcsCmd))
+        vcs = BaseDvcsCmdBin(cmd_binary='python')
+        self.assertTrue(isinstance(vcs, BaseDvcsCmdBin))
         # (stdout, stderr)
         self.assertEqual(len(vcs.execute()), 2)
 
     def test_dvcs_default_fails(self):
-        cmd = BaseDvcsCmd(cmd_binary='python')
+        cmd = BaseDvcsCmdBin(cmd_binary='python')
         workspace = None
         self.assertRaises(NotImplementedError, cmd.clone, workspace)
         self.assertRaises(NotImplementedError, cmd.init_new, workspace)
@@ -112,10 +120,13 @@ class FileWorkspaceTestCase(CoreTestCase, CoreTests):
 
 class _DummyCmd(object):
     marker = '.marker'
+
     def __init__(self):
         self.result = []
+
     def init(self, *a, **kw):
         self.result.append('init')
+
     @property
     def cmd_table(self):
         return {'init': self.init}

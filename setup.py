@@ -1,7 +1,12 @@
+import sys
 from setuptools import setup, find_packages
 import os
 
-version = '0.3'
+sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'src'))
+from pmr2 import wfctrl
+
+
+version = wfctrl.__version__
 
 long_description = (
     open('README.rst').read()
@@ -30,6 +35,7 @@ setup(name='pmr2.wfctrl',
       zip_safe=False,
       install_requires=[
           'setuptools',
+          'dulwich',
           # -*- Extra requirements: -*-
       ],
       entry_points="""

@@ -176,17 +176,105 @@ class BaseCmd(object):
 
 
 class BaseDvcsCmd(BaseCmd):
-    """
-    Base DVCS based command.
-    """
 
     name = '__base__'
     default_remote = None
-    cmd_binary = None
     auto_push = True
 
-    def __init__(self, remote=None, cmd_binary=None):
+    def __init__(self, remote=None):
         self.remote = remote
+
+    def clone(self, workspace, **kw):
+        raise NotImplementedError
+
+    def init_new(self, workspace, **kw):
+        raise NotImplementedError
+
+    def add(self, workspace, path, **kw):
+        raise NotImplementedError
+
+    def commit(self, workspace, message, **kw):
+        raise NotImplementedError
+
+    def read_remote(self, workspace, target_remote=None, **kw):
+        raise NotImplementedError
+
+    def write_remote(self, workspace, target_remote=None, **kw):
+        raise NotImplementedError
+
+    # public class method because this is useful before class is
+    # instantiated.
+    @classmethod
+    def available(cls):
+        raise NotImplementedError
+
+    # public instance method because instances always execute this.
+    def execute(self, *args, **kw):
+        raise NotImplementedError
+
+    def pull(self, workspace, **kw):
+        raise NotImplementedError
+
+    def push(self, workspace, **kw):
+        raise NotImplementedError
+
+    def reset_to_remote(self, workspace, **kw):
+        raise NotImplementedError
+
+    def init(self, workspace, **kw):
+        if self.remote:
+            self.clone(workspace)
+        else:
+            self.init_new(workspace)
+
+    def save(self, workspace, message='', **kw):
+        for path in workspace.get_tracked_subpaths():
+            logger.debug('Add path={0}'.format(path))
+            self.add(workspace, path)
+        # XXX return these results.
+        self.commit(workspace, message)
+        self.update_remote(workspace)
+        self.push(workspace)
+
+    def get_remote(self, workspace,
+                   target_remote=None, username=None, password=None):
+        target_remote = target_remote or self.default_remote
+        target_url = self.read_remote(workspace, target_remote=target_remote)
+        if target_url is None:
+            # XXX should we inform caller here that it's undefined?
+            return set_url_cred(target_remote, username, password)
+        return set_url_cred(target_url, username, password)
+
+    def update_remote(self, workspace):
+        default_origin = self.default_remote
+        stored_remote = self.read_remote(workspace)
+
+        if stored_remote and self.remote:
+            if self.remote == stored_remote:
+                logger.debug('remotes matched, not issuing update command')
+                return
+            logger.info('updating stored remote with current remote')
+            self.write_remote(workspace)
+        elif self.remote is None and stored_remote is None:
+            logger.warning('no default remote define, push will fail')
+        elif self.remote and stored_remote is None:
+            logger.info('writing current remote in cmd object')
+            self.write_remote(workspace)
+        elif self.remote is None and stored_remote:
+            logger.debug('using stored remote')
+            self.remote = stored_remote
+
+
+class BaseDvcsCmdBin(BaseDvcsCmd):
+    """
+    Base DVCS binaries based command.
+    """
+
+    name = '__base_bin__'
+    cmd_binary = None
+
+    def __init__(self, remote=None, cmd_binary=None):
+        super(BaseDvcsCmdBin, self).__init__(remote=remote)
         if cmd_binary:
             self.cmd_binary = cmd_binary
         if not self._available():
@@ -246,71 +334,3 @@ class BaseDvcsCmd(BaseCmd):
 
         return self._execute(args=args, cmd_binary=self.cmd_binary)
 
-    def init(self, workspace, **kw):
-        if self.remote:
-            self.clone(workspace)
-        else:
-            self.init_new(workspace)
-
-    def save(self, workspace, message='', **kw):
-        for path in workspace.get_tracked_subpaths():
-            self.add(workspace, path)
-        # XXX return these results.
-        self.commit(workspace, message)
-        self.update_remote(workspace)
-        self.push(workspace)
-
-    def clone(self, workspace, **kw):
-        raise NotImplementedError
-
-    def init_new(self, workspace, **kw):
-        raise NotImplementedError
-
-    def add(self, workspace, path, **kw):
-        raise NotImplementedError
-
-    def commit(self, workspace, message, **kw):
-        raise NotImplementedError
-
-    def read_remote(self, workspace, target_remote=None, **kw):
-        raise NotImplementedError
-
-    def write_remote(self, workspace, target_remote=None, **kw):
-        raise NotImplementedError
-
-    def get_remote(self, workspace, 
-            target_remote=None, username=None, password=None):
-        target_remote = target_remote or self.default_remote
-        target_url = self.read_remote(workspace, target_remote=target_remote)
-        if target_url is None:
-            # XXX should we inform caller here that it's undefined?
-            return set_url_cred(target_remote, username, password)
-        return set_url_cred(target_url, username, password)
-
-    def update_remote(self, workspace):
-        default_origin = self.default_remote
-        stored_remote = self.read_remote(workspace)
-
-        if stored_remote and self.remote:
-            if self.remote == stored_remote:
-                logger.debug('remotes matched, not issuing update command')
-                return
-            logger.info('updating stored remote with current remote')
-            self.write_remote(workspace)
-        elif self.remote is None and stored_remote is None:
-            logger.warning('no default remote define, push will fail')
-        elif self.remote and stored_remote is None:
-            logger.info('writing current remote in cmd object')
-            self.write_remote(workspace)
-        elif self.remote is None and stored_remote:
-            logger.debug('using stored remote')
-            self.remote = stored_remote
-
-    def pull(self, workspace, **kw):
-        raise NotImplementedError
-
-    def push(self, workspace, **kw):
-        raise NotImplementedError
-
-    def reset_to_remote(self, workspace, **kw):
-        raise NotImplementedError

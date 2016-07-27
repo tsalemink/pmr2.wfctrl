@@ -34,3 +34,4 @@ class SetUrlCredsTestCase(TestCase):
     def test_windows_abs_path(self):
        r = utils.set_url_cred('C:\\User\\Tester\\Documents', 'user', 'pass')
        self.assertEqual(r, 'C:\\User\\Tester\\Documents')
+

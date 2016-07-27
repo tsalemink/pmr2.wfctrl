@@ -14,9 +14,9 @@ class CoreTestCase(TestCase):
         os.mkdir(self.workspace_dir)
 
     def tearDown(self):
-        shutil.rmtree(self.working_dir)
+        shutil.rmtree(self.working_dir, onerror=handle_access_error)
 
-    def make_workspace(self):
+    def make_workspace(self):  # pragma: no cover
         raise NotImplementedError
 
 
@@ -106,3 +106,23 @@ class CoreTests(object):
         fn1 = self.write_file('Failure', join(self.working_dir, 'badname'))
         self.assertRaises(ValueError, wks.add_file, fn1)
         self.assertEqual(wks.get_tracked_subpaths(), [])
+
+
+def handle_access_error(func, path, exc_info):  # pragma: no cover
+    """
+    Error handler for ``shutil.rmtree``.
+
+    If the error is due to an access error (read only file)
+    it attempts to add write permission and then retries.
+
+    If the error is for another reason it re-raises the error.
+
+    Usage : ``shutil.rmtree(path, onerror=onerror)``
+    """
+    import stat
+    if not os.access(path, os.W_OK):
+        # Is the error an access error ?
+        os.chmod(path, stat.S_IWUSR)
+        func(path)
+    else:
+        raise
