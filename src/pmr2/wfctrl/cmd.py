@@ -2,13 +2,12 @@ import logging
 from os.path import join, isdir
 import os
 import sys
+from io import BytesIO
 
 if sys.version_info > (3, 0):  # pragma: no cover
     from configparser import ConfigParser
-    from io import BytesIO
 else:  # pragma: no cover
     from ConfigParser import ConfigParser
-    from BytesIO import BytesIO
 
 from pmr2.wfctrl.core import BaseDvcsCmdBin, register_cmd, BaseDvcsCmd
 
