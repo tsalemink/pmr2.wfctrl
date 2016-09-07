@@ -2,11 +2,10 @@ import sys
 from setuptools import setup, find_packages
 import os
 
-sys.path.append(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'src'))
-from pmr2 import wfctrl
-
-
-version = wfctrl.__version__
+# Must keep these two versions in sync.
+# from pmr2 import wfctrl
+# version = wfctrl.__version__
+version = '0.3.0'
 
 long_description = (
     open('README.rst').read()
