@@ -61,7 +61,7 @@ class CoreTests(object):
         fn = self.add_files_simple(wks)
         self.assertEqual(wks.get_tracked_subpaths(), [fn])
         wks.save()
-        return wks
+        # return wks
 
     def add_files_multi(self, workspace):
         fn1 = self.write_file('Test content1')
@@ -77,7 +77,7 @@ class CoreTests(object):
         filenames = self.add_files_multi(wks)
         self.assertEqual(wks.get_tracked_subpaths(), filenames)
         wks.save()
-        return wks
+        # return wks
 
     def add_files_nested(self, workspace):
         os.mkdir(join(self.workspace_dir, 'testdir'))
@@ -99,7 +99,7 @@ class CoreTests(object):
                 ['file1', join('testdir', 'file2'), join('testdir', 'file3')]]
         ))
         wks.save()
-        return wks
+        # return wks
 
     def test_add_files_outside_workspace(self):
         wks = self.make_workspace()
