@@ -258,12 +258,11 @@ class DulwichDvcsCmd(BaseDvcsCmd):
     def reset_to_remote(self, workspace, branch=None):
         outstream = BytesIO()
         errstream = BytesIO()
-        # XXX not actually resetting to remote
-        # XXX assuming 'master' is the current branch
         if branch is None:
-            branch = 'master'
+            branch = porcelain.active_branch(workspace.working_dir)
 
-        porcelain.reset(workspace.working_dir, 'hard', committish=b'HEAD')
+        # XXX not actually resetting to remote
+        porcelain.reset(workspace.working_dir, 'hard', treeish=b'HEAD')
         return outstream.getvalue().decode(), errstream.getvalue().decode()
 
     def init_new(self, workspace, **kw):
@@ -272,24 +271,19 @@ class DulwichDvcsCmd(BaseDvcsCmd):
             porcelain.init(path=workspace.working_dir)
 
     def read_remote(self, workspace, target_remote=None, **kw):
-        target_remote = target_remote or self.default_remote
-        outstream = BytesIO()
-        # self.execute(*self._args(workspace, 'remote', '-v'))
-        porcelain.remote(
-            repo=workspace.working_dir, verbose=True, outstream=outstream)
-        if outstream:
-            for lines in outstream.getvalue().splitlines():
-                remotes = lines.split()  # .decode('utf8', errors='replace')
-                logger.debug("remotes: {0}".format(remotes))
-                if remotes[0] == target_remote.encode():
-                    # XXX assuming first one is correct
-                    return remotes[1].decode()
+        with porcelain.open_repo_closing(workspace.working_dir) as repo:
+            _, name = porcelain.get_remote_repo(repo, target_remote)
+            if name:
+                return name
 
         logger.debug("read_remote returning None.")
 
     def write_remote(self, workspace, target_remote=None, **kw):
         target_remote = target_remote or self.default_remote
-        porcelain.remote_rm(workspace.working_dir, target_remote.encode())
+        try:
+            porcelain.remote_remove(workspace.working_dir, target_remote.encode())
+        except KeyError:
+            pass  # assume the remote wasn't there
         porcelain.remote_add(workspace.working_dir, target_remote.encode(), self.remote.encode('utf-8'))
 
     def pull(self, workspace, username=None, password=None, **kw):
@@ -315,8 +309,6 @@ class DulwichDvcsCmd(BaseDvcsCmd):
             committer=self._committer.encode('utf8'))
 
     def add(self, workspace, path, **kw):
-        if workspace.working_dir in path:
-            path = path.replace(workspace.working_dir + os.sep, '')
         porcelain.add(repo=workspace.working_dir, paths=[path])
 
 

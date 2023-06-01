@@ -331,7 +331,7 @@ class DulwichDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         outstream = StringIO()
         r = Repo(self.workspace.working_dir)
         index = r.open_index()
-        for blob in index.iterblobs():
+        for blob in index.iterobjects():
             outstream.write('\t'.join(map(str, blob)) + '\n')
 
         return ''.join(outstream.getvalue()).encode(), b''

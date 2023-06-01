@@ -3,9 +3,6 @@ from setuptools import setup, find_packages
 from setuptools.command.install import install
 import os
 
-
-SETUP_DIR = os.path.dirname(os.path.abspath(__file__))
-
 # Must keep these two versions in sync.
 # from pmr2 import wfctrl
 # version = wfctrl.__version__
@@ -18,15 +15,6 @@ long_description = (
     + '\n')
 
 
-class InstallCommand(install):
-
-    def run(self):
-        install.run(self)
-        # Automatically install requirements from requirements.txt
-        import subprocess
-        subprocess.call(['pip', 'install', '-r', os.path.join(SETUP_DIR, 'requirements.txt')])
-
-
 setup(name='pmr2.wfctrl',
       version=version,
       description="Workflow controller",
@@ -36,7 +24,6 @@ setup(name='pmr2.wfctrl',
       classifiers=[
         "Programming Language :: Python",
         ],
-      cmdclass={'install': InstallCommand,},
       keywords='',
       author='',
       author_email='',
