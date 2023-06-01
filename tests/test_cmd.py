@@ -257,8 +257,11 @@ class GitDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         return GitDvcsCmd._execute(self.cmd._args(self.workspace, 'log'))
 
     def _ls_root(self, workspace=None):
+        branch, _ = self.cmd.execute(
+            *self.cmd._args(self.workspace, 'branch', '--show-current'))
+        branch = branch.strip()
         return GitDvcsCmd._execute(
-            self.cmd._args(self.workspace, 'ls-tree', 'master'))
+            self.cmd._args(self.workspace, 'ls-tree', branch))
 
     def _make_remote(self):
         target = os.path.join(self.working_dir, 'remote')
