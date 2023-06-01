@@ -9,7 +9,7 @@ SETUP_DIR = os.path.dirname(os.path.abspath(__file__))
 # Must keep these two versions in sync.
 # from pmr2 import wfctrl
 # version = wfctrl.__version__
-version = '0.3.0'
+version = '0.4.0'
 
 long_description = (
     open('README.rst').read()
