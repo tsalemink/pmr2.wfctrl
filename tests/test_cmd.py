@@ -107,16 +107,17 @@ class RawCmdTests(object):
             committer='Tester <test@example.com>')
 
     def check_commit(self, files, message=None, committer=None):
-        stdout, stderr = self._call(self._log)
+        stdout, stderr, return_code = self._call(self._log)
         self.assertTrue(message in stdout)
         self.assertTrue(committer in stdout)
-        stdout, stderr = self._call(self._ls_root)
+        self.assertTrue(return_code == 0)
+        stdout, stderr, return_code = self._call(self._ls_root)
         for fn in files:
             self.assertTrue(basename(fn) in stdout)
 
     def _call(self, f, a=(), kw={}, codec='latin1'):
-        stdout, stderr = f(*a, **kw)
-        return stdout.decode(codec), stderr.decode(codec)
+        stdout, stderr, return_code = f(*a, **kw)
+        return stdout.decode(codec), stderr.decode(codec), return_code
 
     def test_push_remote(self):
         self.cmd.init_new(self.workspace)
@@ -139,9 +140,10 @@ class RawCmdTests(object):
 
         # Instantiate the remote for checking
         new_workspace = CmdWorkspace(remote, self.cmdcls())
-        stdout, stderr = self._call(self._log, (new_workspace,))
+        stdout, stderr, return_code = self._call(self._log, (new_workspace,))
         self.assertTrue('nested files' in stdout)
         self.assertTrue('single file' in stdout)
+        self.assertTrue(return_code == 0)
 
     def test_get_remote(self):
         self.cmd.init_new(self.workspace)
@@ -257,7 +259,7 @@ class GitDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         return GitDvcsCmd._execute(self.cmd._args(self.workspace, 'log'))
 
     def _ls_root(self, workspace=None):
-        branch, _ = self.cmd.execute(
+        branch, _, *_ = self.cmd.execute(
             *self.cmd._args(self.workspace, 'branch', '--show-current'))
         branch = branch.strip()
         return GitDvcsCmd._execute(
@@ -324,7 +326,7 @@ class DulwichDvcsCmdTestCase(CoreTestCase, RawCmdTests):
     def _log(self, workspace=None):
         outstream = StringIO()
         porcelain.log(repo=self.workspace.working_dir, outstream=outstream)
-        return ''.join(outstream.getvalue()).encode(), b''
+        return ''.join(outstream.getvalue()).encode(), b'', 0
 
     def _ls_root(self, workspace=None):
         from dulwich.repo import Repo
@@ -334,7 +336,7 @@ class DulwichDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         for blob in index.iterobjects():
             outstream.write('\t'.join(map(str, blob)) + '\n')
 
-        return ''.join(outstream.getvalue()).encode(), b''
+        return ''.join(outstream.getvalue()).encode(), b'', 0
 
     def test_get_cmd_by_name(self):
         pass

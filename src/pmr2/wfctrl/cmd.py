@@ -215,7 +215,7 @@ class GitDvcsCmd(BaseDvcsCmdBin):
     def reset_to_remote(self, workspace, branch=None):
         # XXX not actually resetting to remote
         if branch is None:
-            branch, _ = self.execute(
+            branch, _, *_ = self.execute(
                 *self._args(workspace, 'branch', '--show-current'))
             branch = branch.strip()
         args = self._args(workspace, 'reset', '--hard', branch)

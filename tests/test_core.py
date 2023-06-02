@@ -84,8 +84,8 @@ class BaseDvcsCmdBinTestCase(TestCase):
         # Pretend we have a binary here too
         vcs = BaseDvcsCmdBin(cmd_binary='python')
         self.assertTrue(isinstance(vcs, BaseDvcsCmdBin))
-        # (stdout, stderr)
-        self.assertEqual(len(vcs.execute()), 2)
+        # (stdout, stderr, return_code)
+        self.assertEqual(len(vcs.execute()), 3)
 
     def test_dvcs_default_fails(self):
         cmd = BaseDvcsCmdBin(cmd_binary='python')
