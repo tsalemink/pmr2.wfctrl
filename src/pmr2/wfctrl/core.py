@@ -301,7 +301,7 @@ class BaseDvcsCmdBin(BaseDvcsCmd):
             extra_kw['preexec_fn'] = os.setsid
 
         p = Popen(cmdargs, stdin=PIPE, stdout=PIPE, stderr=PIPE, **extra_kw)
-        return p.communicate()
+        return p.communicate() + (p.returncode,)
 
     # public class method because this is useful before class is
     # instantiated.

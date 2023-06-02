@@ -172,7 +172,7 @@ class GitDvcsCmd(BaseDvcsCmdBin):
 
     def read_remote(self, workspace, target_remote=None, **kw):
         target_remote = target_remote or self.default_remote
-        stdout, err = self.execute(*self._args(workspace, 'remote', '-v'))
+        stdout, err, return_code = self.execute(*self._args(workspace, 'remote', '-v'))
         if stdout:
             for lines in stdout.splitlines():
                 remotes = lines.decode('utf8', errors='replace').split()
@@ -182,9 +182,9 @@ class GitDvcsCmd(BaseDvcsCmdBin):
 
     def write_remote(self, workspace, target_remote=None, **kw):
         target_remote = target_remote or self.default_remote
-        stdout, err = self.execute(*self._args(workspace, 'remote',
+        stdout, err, return_code = self.execute(*self._args(workspace, 'remote',
             'rm', target_remote))
-        stdout, err = self.execute(*self._args(workspace, 'remote',
+        stdout, err, return_code = self.execute(*self._args(workspace, 'remote',
             'add', target_remote, self.remote))
 
     def pull(self, workspace, username=None, password=None, **kw):
@@ -215,7 +215,7 @@ class GitDvcsCmd(BaseDvcsCmdBin):
     def reset_to_remote(self, workspace, branch=None):
         # XXX not actually resetting to remote
         if branch is None:
-            branch, _ = self.execute(
+            branch, _, *_ = self.execute(
                 *self._args(workspace, 'branch', '--show-current'))
             branch = branch.strip()
         args = self._args(workspace, 'reset', '--hard', branch)
