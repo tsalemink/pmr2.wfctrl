@@ -3,9 +3,6 @@ from setuptools import setup, find_packages
 from setuptools.command.install import install
 import os
 
-# Must keep these two versions in sync.
-# from pmr2 import wfctrl
-# version = wfctrl.__version__
 version = '0.4.0'
 
 long_description = (
