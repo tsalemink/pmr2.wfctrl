@@ -273,6 +273,10 @@ class GitDvcsCmdTestCase(CoreTestCase, RawCmdTests):
     def test_get_cmd_by_name(self):
         self.assertEqual(get_cmd_by_name('git'), self.cmdcls)
 
+    @skipIf(DulwichDvcsCmd.available(), 'git is not available')
+    def test_auto_init(self):  # pragma: no cover
+        super(GitDvcsCmdTestCase, self).test_auto_init()
+
 
 @skipIf(not MercurialDvcsCmd.available(), 'mercurial is not available')
 class MercurialDvcsCmdTestCase(CoreTestCase, RawCmdTests):
@@ -339,7 +343,4 @@ class DulwichDvcsCmdTestCase(CoreTestCase, RawCmdTests):
         return ''.join(outstream.getvalue()).encode(), b'', 0
 
     def test_get_cmd_by_name(self):
-        pass
-
-    def test_auto_init(self):
-        pass
+        self.assertEqual(get_cmd_by_name('dulwich'), self.cmdcls)
