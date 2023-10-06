@@ -310,7 +310,7 @@ class DulwichDvcsCmd(BaseDvcsCmd):
 
 
 def _register():
-    register_cmd(MercurialDvcsCmd, GitDvcsCmd, DulwichDvcsCmd)
+    register_cmd(MercurialDvcsCmd, DulwichDvcsCmd, GitDvcsCmd)
 
 register = _register
 register()

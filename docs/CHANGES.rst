@@ -1,6 +1,12 @@
 Changelog
 =========
 
+0.5.0 - 2023-10-06
+------------------
+
+- Dulwich is now registered first.
+- Have the registration by name show all available implementations.
+
 0.4.0 - 2023-06-16
 ------------------
 
