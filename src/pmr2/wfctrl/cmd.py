@@ -116,10 +116,7 @@ class MercurialDvcsCmd(BaseDvcsCmdBin):
         output = self.execute(*args)
         print("mercurial pull:")
         print(output)
-        return_code = 0
-        if output[1]:
-            return_code = 1
-        return '\n'.join(output[0]).encode(), output[1], return_code
+        return output
 
     def push(self, workspace, username=None, password=None, **kw):
         # XXX origin may be undefined
@@ -129,10 +126,7 @@ class MercurialDvcsCmd(BaseDvcsCmdBin):
         output = self.execute(*args)
         print("mercurial push:")
         print(output)
-        return_code = 0
-        if output[1]:
-            return_code = 1
-        return '\n'.join(output[0]).encode(), output[1], return_code
+        return output
 
     def reset_to_remote(self, workspace, branch=None):
         if branch is None:
