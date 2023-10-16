@@ -114,6 +114,8 @@ class MercurialDvcsCmd(BaseDvcsCmdBin):
         # XXX assuming repo is clean
         args = self._args(workspace, 'pull', target)
         output = self.execute(*args)
+        print("mercurial pull:")
+        print(output)
         return_code = 0
         if output[1]:
             return_code = 1
@@ -125,6 +127,8 @@ class MercurialDvcsCmd(BaseDvcsCmdBin):
                                       username=username, password=password)
         args = self._args(workspace, 'push', push_target)
         output = self.execute(*args)
+        print("mercurial push:")
+        print(output)
         return_code = 0
         if output[1]:
             return_code = 1
