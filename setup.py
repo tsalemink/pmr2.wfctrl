@@ -1,6 +1,4 @@
-import sys
 from setuptools import setup, find_packages
-from setuptools.command.install import install
 import os
 
 version = '0.6.0'

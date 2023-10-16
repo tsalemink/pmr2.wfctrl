@@ -1,6 +1,5 @@
 import logging
 from os.path import join, isdir
-import os
 import sys
 from io import BytesIO
 
@@ -17,12 +16,10 @@ try:
 except ImportError:  # pragma: no cover
     dulwich_available = False
 
-
 logger = logging.getLogger(__name__)
 
 
 class DemoDvcsCmd(BaseDvcsCmdBin):
-
     binary = 'vcs'
     marker = '.marker'
     default_remote = '__default_remote__'
@@ -34,7 +31,7 @@ class DemoDvcsCmd(BaseDvcsCmdBin):
 
     def clone(self, workspace, **kw):
         self.queue.append([self.binary, 'clone', self.remote,
-            workspace.working_dir])
+                           workspace.working_dir])
 
     def init_new(self, workspace, **kw):
         self.queue.append([self.binary, 'init', workspace.working_dir])
@@ -59,7 +56,6 @@ class DemoDvcsCmd(BaseDvcsCmdBin):
 
 
 class MercurialDvcsCmd(BaseDvcsCmdBin):
-
     cmd_binary = 'hg'
     name = 'mercurial'
     marker = '.hg'
@@ -114,7 +110,7 @@ class MercurialDvcsCmd(BaseDvcsCmdBin):
     def pull(self, workspace, username=None, password=None, **kw):
         # XXX origin may be undefined
         target = self.get_remote(workspace,
-            username=username, password=password)
+                                 username=username, password=password)
         # XXX assuming repo is clean
         args = self._args(workspace, 'pull', target)
         return self.execute(*args)
@@ -122,7 +118,7 @@ class MercurialDvcsCmd(BaseDvcsCmdBin):
     def push(self, workspace, username=None, password=None, **kw):
         # XXX origin may be undefined
         push_target = self.get_remote(workspace,
-            username=username, password=password)
+                                      username=username, password=password)
         args = self._args(workspace, 'push', push_target)
         return self.execute(*args)
 
@@ -134,7 +130,6 @@ class MercurialDvcsCmd(BaseDvcsCmdBin):
 
 
 class GitDvcsCmd(BaseDvcsCmdBin):
-
     cmd_binary = 'git'
     name = 'git'
     marker = '.git'
@@ -183,27 +178,26 @@ class GitDvcsCmd(BaseDvcsCmdBin):
     def write_remote(self, workspace, target_remote=None, **kw):
         target_remote = target_remote or self.default_remote
         stdout, err, return_code = self.execute(*self._args(workspace, 'remote',
-            'rm', target_remote))
+                                                            'rm', target_remote))
         stdout, err, return_code = self.execute(*self._args(workspace, 'remote',
-            'add', target_remote, self.remote))
+                                                            'add', target_remote, self.remote))
 
     def pull(self, workspace, username=None, password=None, **kw):
         # XXX origin may be undefined
         target = self.get_remote(workspace,
-            username=username, password=password)
+                                 username=username, password=password)
         # XXX assuming repo is clean
         args = self._args(workspace, 'pull', target)
         return self.execute(*args)
 
     def push(self, workspace, username=None, password=None, branches=None,
-            **kw):
+             **kw):
         """
         branches
             A list of branches to push.  Defaults to --all
         """
-
         push_target = self.get_remote(workspace,
-            username=username, password=password)
+                                      username=username, password=password)
         args = self._args(workspace, 'push', push_target)
         if not branches:
             args.append('--all')
@@ -223,7 +217,6 @@ class GitDvcsCmd(BaseDvcsCmdBin):
 
 
 class DulwichDvcsCmd(BaseDvcsCmd):
-
     name = 'dulwich'
     marker = '.git'
 
@@ -239,36 +232,31 @@ class DulwichDvcsCmd(BaseDvcsCmd):
 
         return True
 
-    def push(self, workspace, username=None, password=None, branches=None, **kw):
-        outstream = BytesIO()
-        errstream = BytesIO()
-        push_target = self.get_remote(workspace,
-            username=username, password=password)
-        try:
-            # push_target = "file://" + push_target
-            porcelain.push(repo=workspace.working_dir, remote_location=push_target, refspecs=[], outstream=outstream, errstream=errstream)
-        except NotGitRepository as e:
-            errstream.write(b'Not a Git repository ' + push_target.encode())
-
-        return outstream.getvalue().decode(), errstream.getvalue().decode()
+    def set_committer(self, name, email, **kw):
+        self._committer = (name, email)
 
     def clone(self, workspace, **kw):
-        porcelain.clone(self.remote, workspace.working_dir)
-
-    def reset_to_remote(self, workspace, branch=None):
-        outstream = BytesIO()
-        errstream = BytesIO()
-        if branch is None:
-            branch = porcelain.active_branch(workspace.working_dir)
-
-        # XXX not actually resetting to remote
-        porcelain.reset(workspace.working_dir, 'hard', treeish=b'HEAD')
-        return outstream.getvalue().decode(), errstream.getvalue().decode()
+        out_stream = BytesIO()
+        err_stream = BytesIO()
+        porcelain.clone(self.remote, workspace.working_dir, outstream=out_stream, errstream=err_stream)
+        return out_stream.getvalue(), err_stream.getvalue(), 0
 
     def init_new(self, workspace, **kw):
         # Dulwich.porcelain doesn't re-initialise a repository as true git does.
         if not isdir(join(workspace.working_dir, self.marker)):
             porcelain.init(path=workspace.working_dir)
+
+        return b'', b'', 0 if isdir(join(workspace.working_dir, self.marker)) else 1
+
+    def add(self, workspace, path, **kw):
+        rel_paths, ignored = porcelain.add(repo=workspace.working_dir, paths=[path])
+        return '\n'.join(rel_paths).encode(), '\n'.join(ignored).encode(), 0
+
+    def commit(self, workspace, message, **kw):
+        output = porcelain.commit(
+            repo=workspace.working_dir, message=message.encode('utf8'),
+            committer=f"{self._committer[0]} <{self._committer[1]}>")
+        return output, b'', 0 if output else 1
 
     def read_remote(self, workspace, target_remote=None, **kw):
         with porcelain.open_repo_closing(workspace.working_dir) as repo:
@@ -284,33 +272,48 @@ class DulwichDvcsCmd(BaseDvcsCmd):
         porcelain.remote_add(workspace.working_dir, target_remote.encode(), self.remote.encode('utf-8'))
 
     def pull(self, workspace, username=None, password=None, **kw):
-        outstream = BytesIO()
-        errstream = BytesIO()
+        out_stream = BytesIO()
+        err_stream = BytesIO()
         # XXX origin may be undefined
         target = self.get_remote(workspace,
-            username=username, password=password)
+                                 username=username, password=password)
         # XXX assuming repo is clean
         try:
-            porcelain.pull(workspace.working_dir, target.encode(), outstream=outstream, errstream=errstream)
+            result = 0
+            porcelain.pull(workspace.working_dir, target.encode(), outstream=out_stream, errstream=err_stream)
         except NotGitRepository as e:
-            errstream.write(b'Not a Git repository ' + target.encode())
+            result = 1
+            err_stream.write(b'Not a Git repository ' + target.encode())
 
-        return outstream.getvalue().decode(), errstream.getvalue().decode()
+        return out_stream.getvalue(), err_stream.getvalue(), result
 
-    def set_committer(self, name, email, **kw):
-        self._committer = '%s <%s>' % (name, email)
+    def push(self, workspace, username=None, password=None, branches=None, **kw):
+        outstream = BytesIO()
+        errstream = BytesIO()
+        push_target = self.get_remote(workspace,
+                                      username=username, password=password)
+        try:
+            # push_target = "file://" + push_target
+            porcelain.push(repo=workspace.working_dir, remote_location=push_target, refspecs=[], outstream=outstream, errstream=errstream)
+            return_code = 0
+        except NotGitRepository as e:
+            errstream.write(b'Not a Git repository ' + push_target.encode())
+            return_code = 1
 
-    def commit(self, workspace, message, **kw):
-        porcelain.commit(
-            repo=workspace.working_dir, message=message.encode('utf8'),
-            committer=self._committer.encode('utf8'))
+        return outstream.getvalue(), errstream.getvalue(), return_code
 
-    def add(self, workspace, path, **kw):
-        porcelain.add(repo=workspace.working_dir, paths=[path])
+    def reset_to_remote(self, workspace, branch=None):
+        if branch is None:
+            branch = porcelain.active_branch(workspace.working_dir)
+
+        # XXX not actually resetting to remote
+        porcelain.reset(workspace.working_dir, 'hard', treeish=b'HEAD')
+        return b'', b'', 0
 
 
 def _register():
     register_cmd(MercurialDvcsCmd, DulwichDvcsCmd, GitDvcsCmd)
+
 
 register = _register
 register()

@@ -2,6 +2,7 @@ from unittest import TestCase, skipIf
 
 import os
 import sys
+import json
 import logging
 from os.path import join, isdir, basename
 
@@ -24,7 +25,6 @@ from pmr2.wfctrl.cmd import DulwichDvcsCmd
 from pmr2.wfctrl.testing.base import CoreTestCase
 from pmr2.wfctrl.testing.base import CoreTests
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -33,20 +33,23 @@ def fail(*a, **kw):
 
 
 class RawCmdTests(object):
-
     cmdcls = None
     _trap_cmds = ['push', 'pull', 'clone']
 
     def TrapCmd(self, *a, **kw):
         trap_cmds = self._trap_cmds
 
-
         class TrapCmd(self.cmdcls):
             def execute(self, *a, **kw):
                 for t in trap_cmds:
                     if t in a:
-                        return (a, kw)
+                        return (
+                            json.dumps(a).encode(),
+                            json.dumps(kw).encode(),
+                            0,
+                        )
                 return super(TrapCmd, self).execute(*a, **kw)
+
         return TrapCmd(*a, **kw)
 
     @property
@@ -104,7 +107,7 @@ class RawCmdTests(object):
         self.cmd.set_committer('Tester', 'test@example.com')
         self.workspace.save(message=message)
         self.check_commit(files, message=message,
-            committer='Tester <test@example.com>')
+                          committer='Tester <test@example.com>')
 
     def check_commit(self, files, message=None, committer=None):
         stdout, stderr, return_code = self._call(self._log)
@@ -148,7 +151,7 @@ class RawCmdTests(object):
     def test_get_remote(self):
         self.cmd.init_new(self.workspace)
         push_target = self.cmd.get_remote(self.workspace,
-            username='username', password='password')
+                                          username='username', password='password')
         # currently no errors, just the token is returned
         self.assertEqual(push_target, self.cmd.default_remote)
 
@@ -158,20 +161,20 @@ class RawCmdTests(object):
         push_target = self.cmd.get_remote(self.workspace)
         self.assertEqual(push_target, 'http://example.com/repo')
         push_target = self.cmd.get_remote(self.workspace,
-            username='username', password='password')
+                                          username='username', password='password')
         self.assertEqual(push_target,
-            'http://username:password@example.com/repo')
+                         'http://username:password@example.com/repo')
 
         push_target = self.cmd.get_remote(self.workspace,
-            target_remote='newremote',
-            username='username', password='password')
+                                          target_remote='newremote',
+                                          username='username', password='password')
         self.assertEqual(push_target, 'newremote')
 
         push_target = self.cmd.get_remote(self.workspace,
-            target_remote='http://alt.example.com/repo',
-            username='username', password='password')
+                                          target_remote='http://alt.example.com/repo',
+                                          username='username', password='password')
         self.assertEqual(push_target,
-            'http://username:password@alt.example.com/repo')
+                         'http://username:password@alt.example.com/repo')
 
     def test_update_remote(self):
         self.assertTrue(self.cmd.remote is None)
@@ -179,7 +182,7 @@ class RawCmdTests(object):
         self.cmd.remote = target
         self.cmd.update_remote(self.workspace)
         self.assertEqual(self.cmd.remote,
-            self.cmd.read_remote(self.workspace))
+                         self.cmd.read_remote(self.workspace))
         # nothing should be done here
         self.cmd.update_remote(self.workspace)
 
@@ -194,7 +197,7 @@ class RawCmdTests(object):
         self.cmd.update_remote(self.workspace)
         # should be set to a new one and can be loaded.
         self.assertEqual(new_target,
-            self.cmd.read_remote(self.workspace))
+                         self.cmd.read_remote(self.workspace))
 
     def test_push_url_with_creds(self):
         workspace = CmdWorkspace(self.workspace_dir, self.cmd)
@@ -202,8 +205,8 @@ class RawCmdTests(object):
         cmd.write_remote(workspace)
         workspace = CmdWorkspace(self.workspace_dir, cmd)
         result = cmd.push(workspace, username='username', password='password')
-        self.assertTrue('http://username:password@example.com/' in result[0] or
-                        'http://username:password@example.com/' in result[1])
+        self.assertTrue('http://username:password@example.com/' in result[0].decode() or
+                        'http://username:password@example.com/' in result[1].decode())
 
     def test_pull_url_with_creds(self):
         workspace = CmdWorkspace(self.workspace_dir, self.cmd)
@@ -211,8 +214,8 @@ class RawCmdTests(object):
         cmd.write_remote(workspace)
         workspace = CmdWorkspace(self.workspace_dir, cmd)
         result = cmd.pull(workspace, username='username', password='password')
-        self.assertTrue('http://username:password@example.com/' in result[0] or
-                        'http://username:password@example.com/' in result[1])
+        self.assertTrue('http://username:password@example.com/' in result[0].decode() or
+                        'http://username:password@example.com/' in result[1].decode())
 
     def test_reset_to_remote(self):
         self.cmd.init_new(self.workspace)
@@ -247,7 +250,6 @@ class RawCmdTests(object):
 
 @skipIf(not GitDvcsCmd.available(), 'git is not available')
 class GitDvcsCmdTestCase(CoreTestCase, RawCmdTests):
-
     cmdcls = GitDvcsCmd
 
     def setUp(self):
@@ -280,7 +282,6 @@ class GitDvcsCmdTestCase(CoreTestCase, RawCmdTests):
 
 @skipIf(not MercurialDvcsCmd.available(), 'mercurial is not available')
 class MercurialDvcsCmdTestCase(CoreTestCase, RawCmdTests):
-
     cmdcls = MercurialDvcsCmd
 
     def setUp(self):
@@ -313,7 +314,6 @@ class MercurialDvcsCmdTestCase(CoreTestCase, RawCmdTests):
 
 @skipIf(not DulwichDvcsCmd.available(), 'dulwich is not available')
 class DulwichDvcsCmdTestCase(CoreTestCase, RawCmdTests):
-
     cmdcls = DulwichDvcsCmd
     _trap_cmds = []
 
