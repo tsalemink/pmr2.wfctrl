@@ -200,8 +200,8 @@ class RawCmdTests(object):
         cmd.write_remote(workspace)
         workspace = CmdWorkspace(self.workspace_dir, cmd)
         result = cmd.push(workspace, username='username', password='password')
-        self.assertTrue('http://username:password@example.com/' in result[0] or
-                        'http://username:password@example.com/' in result[1])
+        self.assertTrue('http://username:password@example.com/' in result[0].decode() or
+                        'http://username:password@example.com/' in result[1].decode())
 
     def test_pull_url_with_creds(self):
         workspace = CmdWorkspace(self.workspace_dir, self.cmd)
@@ -209,8 +209,8 @@ class RawCmdTests(object):
         cmd.write_remote(workspace)
         workspace = CmdWorkspace(self.workspace_dir, cmd)
         result = cmd.pull(workspace, username='username', password='password')
-        self.assertTrue('http://username:password@example.com/' in result[0] or
-                        'http://username:password@example.com/' in result[1])
+        self.assertTrue('http://username:password@example.com/' in result[0].decode() or
+                        'http://username:password@example.com/' in result[1].decode())
 
     def test_reset_to_remote(self):
         self.cmd.init_new(self.workspace)

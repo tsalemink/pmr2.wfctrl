@@ -1,6 +1,5 @@
 import logging
 from os.path import join, isdir
-import os
 import sys
 from io import BytesIO
 
@@ -153,13 +152,11 @@ class GitDvcsCmd(BaseDvcsCmdBin):
         self._committer = (name, email)
 
     def clone(self, workspace, **kw):
-        print("git clone.")
-        output = self.execute('clone', self.remote, workspace.working_dir)
-        print(output)
-        return output
+        return self.execute('clone', self.remote, workspace.working_dir)
 
     def init_new(self, workspace, **kw):
-        return self.execute('init', workspace.working_dir)
+        output = self.execute('init', workspace.working_dir)
+        return output
 
     def add(self, workspace, path, **kw):
         return self.execute(*self._args(workspace, 'add', path))
@@ -196,7 +193,11 @@ class GitDvcsCmd(BaseDvcsCmdBin):
             username=username, password=password)
         # XXX assuming repo is clean
         args = self._args(workspace, 'pull', target)
-        return self.execute(*args)
+        output = self.execute(*args)
+        return_code = 0
+        if output[1]:
+            return_code = 1
+        return '\n'.join(output[0]).encode(), output[1], return_code
 
     def push(self, workspace, username=None, password=None, branches=None,
             **kw):
@@ -213,7 +214,11 @@ class GitDvcsCmd(BaseDvcsCmdBin):
         elif isinstance(branches, list):  # pragma: no cover
             args.extend(branches)
 
-        return self.execute(*args)
+        output = self.execute(*args)
+        return_code = 0
+        if output[1]:
+            return_code = 1
+        return '\n'.join(output[0]).encode(), output[1], return_code
 
     def reset_to_remote(self, workspace, branch=None):
         # XXX not actually resetting to remote
@@ -243,24 +248,30 @@ class DulwichDvcsCmd(BaseDvcsCmd):
         return True
 
     def set_committer(self, name, email, **kw):
-        self._committer = '%s <%s>' % (name, email)
+        self._committer = (name, email)
 
     def clone(self, workspace, **kw):
-        print("dulwich clone.")
-        porcelain.clone(self.remote, workspace.working_dir)
+        out_stream = BytesIO()
+        err_stream = BytesIO()
+        porcelain.clone(self.remote, workspace.working_dir, outstream=out_stream, errstream=err_stream)
+        return out_stream.getvalue(), err_stream.getvalue(), 0
 
     def init_new(self, workspace, **kw):
         # Dulwich.porcelain doesn't re-initialise a repository as true git does.
         if not isdir(join(workspace.working_dir, self.marker)):
             porcelain.init(path=workspace.working_dir)
 
+        return b'', b'', 0 if isdir(join(workspace.working_dir, self.marker)) else 1
+
     def add(self, workspace, path, **kw):
-        porcelain.add(repo=workspace.working_dir, paths=[path])
+        rel_paths, ignored = porcelain.add(repo=workspace.working_dir, paths=[path])
+        return '\n'.join(rel_paths).encode(), '\n'.join(ignored).encode(), 0
 
     def commit(self, workspace, message, **kw):
-        porcelain.commit(
+        output = porcelain.commit(
             repo=workspace.working_dir, message=message.encode('utf8'),
-            committer=self._committer.encode('utf8'))
+            committer=f"{self._committer[0]} <{self._committer[1]}>")
+        return output, b'', 0 if output else 1
 
     def read_remote(self, workspace, target_remote=None, **kw):
         with porcelain.open_repo_closing(workspace.working_dir) as repo:
@@ -276,18 +287,20 @@ class DulwichDvcsCmd(BaseDvcsCmd):
         porcelain.remote_add(workspace.working_dir, target_remote.encode(), self.remote.encode('utf-8'))
 
     def pull(self, workspace, username=None, password=None, **kw):
-        outstream = BytesIO()
-        errstream = BytesIO()
+        out_stream = BytesIO()
+        err_stream = BytesIO()
         # XXX origin may be undefined
         target = self.get_remote(workspace,
             username=username, password=password)
         # XXX assuming repo is clean
         try:
-            porcelain.pull(workspace.working_dir, target.encode(), outstream=outstream, errstream=errstream)
+            porcelain.pull(workspace.working_dir, target.encode(), outstream=out_stream, errstream=err_stream)
+            result = 0
         except NotGitRepository as e:
-            errstream.write(b'Not a Git repository ' + target.encode())
+            err_stream.write(b'Not a Git repository ' + target.encode())
+            result = 1
 
-        return outstream.getvalue().decode(), errstream.getvalue().decode()
+        return out_stream.getvalue(), err_stream.getvalue(), result
 
     def push(self, workspace, username=None, password=None, branches=None, **kw):
         outstream = BytesIO()
@@ -297,24 +310,25 @@ class DulwichDvcsCmd(BaseDvcsCmd):
         try:
             # push_target = "file://" + push_target
             porcelain.push(repo=workspace.working_dir, remote_location=push_target, refspecs=[], outstream=outstream, errstream=errstream)
+            return_code = 0
         except NotGitRepository as e:
             errstream.write(b'Not a Git repository ' + push_target.encode())
+            return_code = 1
 
-        return outstream.getvalue().decode(), errstream.getvalue().decode()
+        return outstream.getvalue(), errstream.getvalue(), return_code
 
     def reset_to_remote(self, workspace, branch=None):
-        outstream = BytesIO()
-        errstream = BytesIO()
         if branch is None:
             branch = porcelain.active_branch(workspace.working_dir)
 
         # XXX not actually resetting to remote
         porcelain.reset(workspace.working_dir, 'hard', treeish=b'HEAD')
-        return outstream.getvalue().decode(), errstream.getvalue().decode()
+        return b'', b'', 0
 
 
 def _register():
     register_cmd(MercurialDvcsCmd, DulwichDvcsCmd, GitDvcsCmd)
+
 
 register = _register
 register()
