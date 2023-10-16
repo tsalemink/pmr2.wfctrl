@@ -153,7 +153,10 @@ class GitDvcsCmd(BaseDvcsCmdBin):
         self._committer = (name, email)
 
     def clone(self, workspace, **kw):
-        return self.execute('clone', self.remote, workspace.working_dir)
+        print("git clone.")
+        output = self.execute('clone', self.remote, workspace.working_dir)
+        print(output)
+        return output
 
     def init_new(self, workspace, **kw):
         return self.execute('init', workspace.working_dir)
@@ -239,36 +242,25 @@ class DulwichDvcsCmd(BaseDvcsCmd):
 
         return True
 
-    def push(self, workspace, username=None, password=None, branches=None, **kw):
-        outstream = BytesIO()
-        errstream = BytesIO()
-        push_target = self.get_remote(workspace,
-            username=username, password=password)
-        try:
-            # push_target = "file://" + push_target
-            porcelain.push(repo=workspace.working_dir, remote_location=push_target, refspecs=[], outstream=outstream, errstream=errstream)
-        except NotGitRepository as e:
-            errstream.write(b'Not a Git repository ' + push_target.encode())
-
-        return outstream.getvalue().decode(), errstream.getvalue().decode()
+    def set_committer(self, name, email, **kw):
+        self._committer = '%s <%s>' % (name, email)
 
     def clone(self, workspace, **kw):
+        print("dulwich clone.")
         porcelain.clone(self.remote, workspace.working_dir)
-
-    def reset_to_remote(self, workspace, branch=None):
-        outstream = BytesIO()
-        errstream = BytesIO()
-        if branch is None:
-            branch = porcelain.active_branch(workspace.working_dir)
-
-        # XXX not actually resetting to remote
-        porcelain.reset(workspace.working_dir, 'hard', treeish=b'HEAD')
-        return outstream.getvalue().decode(), errstream.getvalue().decode()
 
     def init_new(self, workspace, **kw):
         # Dulwich.porcelain doesn't re-initialise a repository as true git does.
         if not isdir(join(workspace.working_dir, self.marker)):
             porcelain.init(path=workspace.working_dir)
+
+    def add(self, workspace, path, **kw):
+        porcelain.add(repo=workspace.working_dir, paths=[path])
+
+    def commit(self, workspace, message, **kw):
+        porcelain.commit(
+            repo=workspace.working_dir, message=message.encode('utf8'),
+            committer=self._committer.encode('utf8'))
 
     def read_remote(self, workspace, target_remote=None, **kw):
         with porcelain.open_repo_closing(workspace.working_dir) as repo:
@@ -297,16 +289,28 @@ class DulwichDvcsCmd(BaseDvcsCmd):
 
         return outstream.getvalue().decode(), errstream.getvalue().decode()
 
-    def set_committer(self, name, email, **kw):
-        self._committer = '%s <%s>' % (name, email)
+    def push(self, workspace, username=None, password=None, branches=None, **kw):
+        outstream = BytesIO()
+        errstream = BytesIO()
+        push_target = self.get_remote(workspace,
+            username=username, password=password)
+        try:
+            # push_target = "file://" + push_target
+            porcelain.push(repo=workspace.working_dir, remote_location=push_target, refspecs=[], outstream=outstream, errstream=errstream)
+        except NotGitRepository as e:
+            errstream.write(b'Not a Git repository ' + push_target.encode())
 
-    def commit(self, workspace, message, **kw):
-        porcelain.commit(
-            repo=workspace.working_dir, message=message.encode('utf8'),
-            committer=self._committer.encode('utf8'))
+        return outstream.getvalue().decode(), errstream.getvalue().decode()
 
-    def add(self, workspace, path, **kw):
-        porcelain.add(repo=workspace.working_dir, paths=[path])
+    def reset_to_remote(self, workspace, branch=None):
+        outstream = BytesIO()
+        errstream = BytesIO()
+        if branch is None:
+            branch = porcelain.active_branch(workspace.working_dir)
+
+        # XXX not actually resetting to remote
+        porcelain.reset(workspace.working_dir, 'hard', treeish=b'HEAD')
+        return outstream.getvalue().decode(), errstream.getvalue().decode()
 
 
 def _register():
