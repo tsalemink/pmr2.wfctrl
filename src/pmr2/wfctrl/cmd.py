@@ -114,11 +114,7 @@ class MercurialDvcsCmd(BaseDvcsCmdBin):
         # XXX assuming repo is clean
         args = self._args(workspace, 'pull', target)
         output = self.execute(*args)
-        return_code = 0
-        if output[1]:
-            return_code = 1
-
-        return '\n'.join(output[0]).encode(), output[1], return_code
+        return '\n'.join(output[0]).encode(), output[1], output[2]
 
     def push(self, workspace, username=None, password=None, **kw):
         # XXX origin may be undefined
@@ -127,10 +123,7 @@ class MercurialDvcsCmd(BaseDvcsCmdBin):
         args = self._args(workspace, 'push', push_target)
         output = self.execute(*args)
         if len(output) == 2:
-            return_code = 0
-            if output[1]:
-                return_code = 1
-            return '\n'.join(output[0]).encode(), output[1], return_code
+            return '\n'.join(output[0]).encode(), output[1], 0
 
         return output
 
@@ -201,10 +194,7 @@ class GitDvcsCmd(BaseDvcsCmdBin):
         # XXX assuming repo is clean
         args = self._args(workspace, 'pull', target)
         output = self.execute(*args)
-        return_code = 0
-        if output[1]:
-            return_code = 1
-        return '\n'.join(output[0]).encode(), output[1], return_code
+        return '\n'.join(output[0]).encode(), output[1], output[2] if len(output) == 3 else 0
 
     def push(self, workspace, username=None, password=None, branches=None,
              **kw):
@@ -221,10 +211,7 @@ class GitDvcsCmd(BaseDvcsCmdBin):
             args.extend(branches)
 
         output = self.execute(*args)
-        return_code = 0
-        if output[1]:
-            return_code = 1
-        return '\n'.join(output[0]).encode(), output[1], return_code
+        return '\n'.join(output[0]).encode(), output[1], output[2] if len(output) == 3 else 0
 
     def reset_to_remote(self, workspace, branch=None):
         # XXX not actually resetting to remote
@@ -299,11 +286,11 @@ class DulwichDvcsCmd(BaseDvcsCmd):
                                  username=username, password=password)
         # XXX assuming repo is clean
         try:
-            porcelain.pull(workspace.working_dir, target.encode(), outstream=out_stream, errstream=err_stream)
             result = 0
+            porcelain.pull(workspace.working_dir, target.encode(), outstream=out_stream, errstream=err_stream)
         except NotGitRepository as e:
-            err_stream.write(b'Not a Git repository ' + target.encode())
             result = 1
+            err_stream.write(b'Not a Git repository ' + target.encode())
 
         return out_stream.getvalue(), err_stream.getvalue(), result
 
