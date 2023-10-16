@@ -113,19 +113,14 @@ class MercurialDvcsCmd(BaseDvcsCmdBin):
                                  username=username, password=password)
         # XXX assuming repo is clean
         args = self._args(workspace, 'pull', target)
-        output = self.execute(*args)
-        return '\n'.join(output[0]).encode(), output[1], output[2] if len(output) == 3 else 0
+        return self.execute(*args)
 
     def push(self, workspace, username=None, password=None, **kw):
         # XXX origin may be undefined
         push_target = self.get_remote(workspace,
                                       username=username, password=password)
         args = self._args(workspace, 'push', push_target)
-        output = self.execute(*args)
-        if len(output) == 2:
-            return '\n'.join(output[0]).encode(), output[1], 0
-
-        return output
+        return self.execute(*args)
 
     def reset_to_remote(self, workspace, branch=None):
         if branch is None:
@@ -193,8 +188,7 @@ class GitDvcsCmd(BaseDvcsCmdBin):
                                  username=username, password=password)
         # XXX assuming repo is clean
         args = self._args(workspace, 'pull', target)
-        output = self.execute(*args)
-        return '\n'.join(output[0]).encode(), output[1], output[2] if len(output) == 3 else 0
+        return self.execute(*args)
 
     def push(self, workspace, username=None, password=None, branches=None,
              **kw):
@@ -210,8 +204,7 @@ class GitDvcsCmd(BaseDvcsCmdBin):
         elif isinstance(branches, list):  # pragma: no cover
             args.extend(branches)
 
-        output = self.execute(*args)
-        return '\n'.join(output[0]).encode(), output[1], output[2] if len(output) == 3 else 0
+        return self.execute(*args)
 
     def reset_to_remote(self, workspace, branch=None):
         # XXX not actually resetting to remote

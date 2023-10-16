@@ -2,6 +2,7 @@ from unittest import TestCase, skipIf
 
 import os
 import sys
+import json
 import logging
 from os.path import join, isdir, basename
 
@@ -42,7 +43,11 @@ class RawCmdTests(object):
             def execute(self, *a, **kw):
                 for t in trap_cmds:
                     if t in a:
-                        return (a, kw)
+                        return (
+                            json.dumps(a).encode(),
+                            json.dumps(kw).encode(),
+                            0,
+                        )
                 return super(TrapCmd, self).execute(*a, **kw)
 
         return TrapCmd(*a, **kw)
