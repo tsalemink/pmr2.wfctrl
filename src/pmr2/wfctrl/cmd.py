@@ -113,14 +113,22 @@ class MercurialDvcsCmd(BaseDvcsCmdBin):
                                  username=username, password=password)
         # XXX assuming repo is clean
         args = self._args(workspace, 'pull', target)
-        return self.execute(*args)
+        output = self.execute(*args)
+        return_code = 0
+        if output[1]:
+            return_code = 1
+        return '\n'.join(output[0]).encode(), output[1], return_code
 
     def push(self, workspace, username=None, password=None, **kw):
         # XXX origin may be undefined
         push_target = self.get_remote(workspace,
                                       username=username, password=password)
         args = self._args(workspace, 'push', push_target)
-        return self.execute(*args)
+        output = self.execute(*args)
+        return_code = 0
+        if output[1]:
+            return_code = 1
+        return '\n'.join(output[0]).encode(), output[1], return_code
 
     def reset_to_remote(self, workspace, branch=None):
         if branch is None:
