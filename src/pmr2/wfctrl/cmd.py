@@ -151,8 +151,7 @@ class GitDvcsCmd(BaseDvcsCmdBin):
         return self.execute('clone', self.remote, workspace.working_dir)
 
     def init_new(self, workspace, **kw):
-        output = self.execute('init', workspace.working_dir)
-        return output
+        return self.execute('init', workspace.working_dir)
 
     def add(self, workspace, path, **kw):
         return self.execute(*self._args(workspace, 'add', path))
