@@ -114,7 +114,7 @@ class MercurialDvcsCmd(BaseDvcsCmdBin):
         # XXX assuming repo is clean
         args = self._args(workspace, 'pull', target)
         output = self.execute(*args)
-        return '\n'.join(output[0]).encode(), output[1], output[2]
+        return '\n'.join(output[0]).encode(), output[1], output[2] if len(output) == 3 else 0
 
     def push(self, workspace, username=None, password=None, **kw):
         # XXX origin may be undefined
