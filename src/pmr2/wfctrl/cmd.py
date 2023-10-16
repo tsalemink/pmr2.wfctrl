@@ -16,12 +16,10 @@ try:
 except ImportError:  # pragma: no cover
     dulwich_available = False
 
-
 logger = logging.getLogger(__name__)
 
 
 class DemoDvcsCmd(BaseDvcsCmdBin):
-
     binary = 'vcs'
     marker = '.marker'
     default_remote = '__default_remote__'
@@ -33,7 +31,7 @@ class DemoDvcsCmd(BaseDvcsCmdBin):
 
     def clone(self, workspace, **kw):
         self.queue.append([self.binary, 'clone', self.remote,
-            workspace.working_dir])
+                           workspace.working_dir])
 
     def init_new(self, workspace, **kw):
         self.queue.append([self.binary, 'init', workspace.working_dir])
@@ -58,7 +56,6 @@ class DemoDvcsCmd(BaseDvcsCmdBin):
 
 
 class MercurialDvcsCmd(BaseDvcsCmdBin):
-
     cmd_binary = 'hg'
     name = 'mercurial'
     marker = '.hg'
@@ -113,7 +110,7 @@ class MercurialDvcsCmd(BaseDvcsCmdBin):
     def pull(self, workspace, username=None, password=None, **kw):
         # XXX origin may be undefined
         target = self.get_remote(workspace,
-            username=username, password=password)
+                                 username=username, password=password)
         # XXX assuming repo is clean
         args = self._args(workspace, 'pull', target)
         return self.execute(*args)
@@ -121,7 +118,7 @@ class MercurialDvcsCmd(BaseDvcsCmdBin):
     def push(self, workspace, username=None, password=None, **kw):
         # XXX origin may be undefined
         push_target = self.get_remote(workspace,
-            username=username, password=password)
+                                      username=username, password=password)
         args = self._args(workspace, 'push', push_target)
         return self.execute(*args)
 
@@ -133,7 +130,6 @@ class MercurialDvcsCmd(BaseDvcsCmdBin):
 
 
 class GitDvcsCmd(BaseDvcsCmdBin):
-
     cmd_binary = 'git'
     name = 'git'
     marker = '.git'
@@ -183,14 +179,14 @@ class GitDvcsCmd(BaseDvcsCmdBin):
     def write_remote(self, workspace, target_remote=None, **kw):
         target_remote = target_remote or self.default_remote
         stdout, err, return_code = self.execute(*self._args(workspace, 'remote',
-            'rm', target_remote))
+                                                            'rm', target_remote))
         stdout, err, return_code = self.execute(*self._args(workspace, 'remote',
-            'add', target_remote, self.remote))
+                                                            'add', target_remote, self.remote))
 
     def pull(self, workspace, username=None, password=None, **kw):
         # XXX origin may be undefined
         target = self.get_remote(workspace,
-            username=username, password=password)
+                                 username=username, password=password)
         # XXX assuming repo is clean
         args = self._args(workspace, 'pull', target)
         output = self.execute(*args)
@@ -200,14 +196,13 @@ class GitDvcsCmd(BaseDvcsCmdBin):
         return '\n'.join(output[0]).encode(), output[1], return_code
 
     def push(self, workspace, username=None, password=None, branches=None,
-            **kw):
+             **kw):
         """
         branches
             A list of branches to push.  Defaults to --all
         """
-
         push_target = self.get_remote(workspace,
-            username=username, password=password)
+                                      username=username, password=password)
         args = self._args(workspace, 'push', push_target)
         if not branches:
             args.append('--all')
@@ -231,7 +226,6 @@ class GitDvcsCmd(BaseDvcsCmdBin):
 
 
 class DulwichDvcsCmd(BaseDvcsCmd):
-
     name = 'dulwich'
     marker = '.git'
 
@@ -291,7 +285,7 @@ class DulwichDvcsCmd(BaseDvcsCmd):
         err_stream = BytesIO()
         # XXX origin may be undefined
         target = self.get_remote(workspace,
-            username=username, password=password)
+                                 username=username, password=password)
         # XXX assuming repo is clean
         try:
             porcelain.pull(workspace.working_dir, target.encode(), outstream=out_stream, errstream=err_stream)
@@ -306,7 +300,7 @@ class DulwichDvcsCmd(BaseDvcsCmd):
         outstream = BytesIO()
         errstream = BytesIO()
         push_target = self.get_remote(workspace,
-            username=username, password=password)
+                                      username=username, password=password)
         try:
             # push_target = "file://" + push_target
             porcelain.push(repo=workspace.working_dir, remote_location=push_target, refspecs=[], outstream=outstream, errstream=errstream)
