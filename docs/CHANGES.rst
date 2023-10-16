@@ -1,7 +1,7 @@
 Changelog
 =========
 
-0.6.0 - 202?-??-??
+0.6.0 - 2023-10-17
 ------------------
 
 - Ensure that Dulwich methods return values match closer with the
