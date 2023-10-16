@@ -1,6 +1,14 @@
 Changelog
 =========
 
+0.6.0 - 202?-??-??
+------------------
+
+- Ensure that Dulwich methods return values match closer with the
+  cli command class counterpart.
+- Cleaned up support code in testing to ensure the defaults are not
+  interfered with.
+
 0.5.0 - 2023-10-06
 ------------------
 
