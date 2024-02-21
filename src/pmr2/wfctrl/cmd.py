@@ -72,8 +72,9 @@ class MercurialDvcsCmd(BaseDvcsCmdBin):
         # TODO persist config.
         self._committer = '%s <%s>' % (name, email)
 
-    def clone(self, workspace, **kw):
-        return self.execute('clone', self.remote, workspace.working_dir)
+    def clone(self, workspace, username=None, password=None, **kw):
+        target = self.get_remote(workspace, target_remote=self.remote, username=username, password=password)
+        return self.execute('clone', target, workspace.working_dir)
 
     def init_new(self, workspace, **kw):
         return self.execute('init', workspace.working_dir)
@@ -147,8 +148,9 @@ class GitDvcsCmd(BaseDvcsCmdBin):
     def set_committer(self, name, email, **kw):
         self._committer = (name, email)
 
-    def clone(self, workspace, **kw):
-        return self.execute('clone', self.remote, workspace.working_dir)
+    def clone(self, workspace, username=None, password=None, **kw):
+        target = self.get_remote(workspace, target_remote=self.remote, username=username, password=password)
+        return self.execute('clone', target, workspace.working_dir)
 
     def init_new(self, workspace, **kw):
         return self.execute('init', workspace.working_dir)
@@ -235,10 +237,11 @@ class DulwichDvcsCmd(BaseDvcsCmd):
     def set_committer(self, name, email, **kw):
         self._committer = (name, email)
 
-    def clone(self, workspace, **kw):
+    def clone(self, workspace, username=None, password=None, **kw):
         out_stream = BytesIO()
         err_stream = BytesIO()
-        porcelain.clone(self.remote, workspace.working_dir, outstream=out_stream, errstream=err_stream)
+        target = self.get_remote(workspace, target_remote=self.remote, username=username, password=password)
+        porcelain.clone(target, workspace.working_dir, outstream=out_stream, errstream=err_stream)
         return out_stream.getvalue(), err_stream.getvalue(), 0
 
     def init_new(self, workspace, **kw):
