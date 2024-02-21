@@ -262,9 +262,12 @@ class DulwichDvcsCmd(BaseDvcsCmd):
         return output, b'', 0 if output else 1
 
     def read_remote(self, workspace, target_remote=None, **kw):
-        with porcelain.open_repo_closing(workspace.working_dir) as repo:
-            _, name = porcelain.get_remote_repo(repo, target_remote)
-            return name
+        try:
+            with porcelain.open_repo_closing(workspace.working_dir) as repo:
+                _, name = porcelain.get_remote_repo(repo, target_remote)
+                return name
+        except NotGitRepository:
+            return None
 
     def write_remote(self, workspace, target_remote=None, **kw):
         target_remote = target_remote or self.default_remote
