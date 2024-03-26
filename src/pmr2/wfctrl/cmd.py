@@ -4,7 +4,6 @@ import sys
 from io import BytesIO
 
 import urllib3
-from base64 import b64encode
 
 if sys.version_info > (3, 0):  # pragma: no cover
     from configparser import ConfigParser
@@ -222,21 +221,24 @@ class GitDvcsCmd(BaseDvcsCmdBin):
 class AuthenticatedGitDvcsCmd(GitDvcsCmd):
     name = 'authenticated_git'
 
-    def __init__(self, username, password, remote=None, cmd_binary=None):
+    def __init__(self, remote=None, cmd_binary=None):
         super().__init__(remote=remote, cmd_binary=cmd_binary)
 
-        auth_bytes = f"{username}:{password}".encode()
-        self._token = b64encode(auth_bytes).decode()
+        self._auth_header = None
 
-    def _auth_header(self):
-        return f'Authorization: Basic {self._token}'
+    def set_authorization(self, authorization_header):
+        """
+        Sets the authorization header for requests made by this class. The input should specify the type of authorization along with the
+        authorization token itself (e.g., "Basic {token}").
+        """
+        self._auth_header = authorization_header
 
     def _authenticate(self, workspace):
-        args = ['config', 'http.extraHeader', self._auth_header()]
+        args = ['config', 'http.extraHeader', f'Authorization: {self._auth_header}']
         return self.execute(*self._args(workspace, *args))
 
     def clone(self, workspace, **kw):
-        args = ['clone', '--config', f'http.extraHeader={self._auth_header()}', self.remote, workspace.working_dir]
+        args = ['clone', '--config', f'http.extraHeader=Authorization: {self._auth_header}', self.remote, workspace.working_dir]
         return self.execute(*args)
 
     def pull(self, workspace, **kw):
@@ -348,15 +350,21 @@ class DulwichDvcsCmd(BaseDvcsCmd):
 class AuthenticatedDulwichDvcsCmd(DulwichDvcsCmd):
     name = 'authenticated_dulwich'
 
-    def __init__(self, username, password, remote=None):
+    def __init__(self, remote=None):
         super().__init__(remote=remote)
 
-        auth_bytes = f"{username}:{password}".encode()
-        self._token = b64encode(auth_bytes).decode()
+        self._auth_header = None
+
+    def set_authorization(self, authorization_header):
+        """
+        Sets the authorization header for requests made by this class. The input should specify the type of authorization along with the
+        authorization token itself (e.g., "Basic {token}").
+        """
+        self._auth_header = authorization_header
 
     def _authenticate_pool_manager(self, *args, **kwargs):
         pool_manager = urllib3.PoolManager()
-        pool_manager.headers['Authorization'] = f'Basic {self._token}'
+        pool_manager.headers['Authorization'] = self._auth_header
         return pool_manager
 
     def clone(self, workspace, **kw):
