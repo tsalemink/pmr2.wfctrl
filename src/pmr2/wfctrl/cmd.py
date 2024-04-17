@@ -243,12 +243,12 @@ class AuthenticatedGitDvcsCmd(GitDvcsCmd):
 
     def pull(self, workspace, **kw):
         self._authenticate(workspace)
-        target = self.read_remote(workspace, target_remote=self.remote)
+        target = self.read_remote(workspace)
         return self.execute(*self._args(workspace, 'pull', target))
 
     def push(self, workspace, **kw):
         self._authenticate(workspace)
-        target = self.read_remote(workspace, target_remote=self.remote)
+        target = self.get_remote(workspace)
         return self.execute(*self._args(workspace, 'push', target))
 
 
@@ -382,7 +382,7 @@ class AuthenticatedDulwichDvcsCmd(DulwichDvcsCmd):
 
     def pull(self, workspace, **kw):
         pool_manager = self._authenticate_pool_manager()
-        target = self.read_remote(workspace, target_remote=self.remote)
+        target = self.read_remote(workspace)
         out_stream = BytesIO()
         err_stream = BytesIO()
         try:
@@ -402,7 +402,7 @@ class AuthenticatedDulwichDvcsCmd(DulwichDvcsCmd):
 
     def push(self, workspace, **kw):
         pool_manager = self._authenticate_pool_manager()
-        target = self.read_remote(workspace, target_remote=self.remote)
+        target = self.read_remote(workspace)
         out_stream = BytesIO()
         err_stream = BytesIO()
         try:
