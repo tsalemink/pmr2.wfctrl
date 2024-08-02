@@ -1,3 +1,4 @@
+import platform
 from unittest import TestCase, skipIf, skip
 
 import os
@@ -284,6 +285,10 @@ class GitDvcsCmdTestCase(CoreTestCase, RawCmdTests):
 
 
 @skipIf(not MercurialDvcsCmd.available(), 'mercurial is not available')
+@skipIf(
+    platform.python_implementation() != 'CPython',
+    'only doing mercurial tests with CPython',
+)
 class MercurialDvcsCmdTestCase(CoreTestCase, RawCmdTests):
     cmdcls = MercurialDvcsCmd
 
