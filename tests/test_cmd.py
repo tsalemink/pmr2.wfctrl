@@ -348,6 +348,21 @@ class DulwichDvcsCmdTestCase(CoreTestCase, RawCmdTests):
     def test_get_cmd_by_name(self):
         self.assertEqual(get_cmd_by_name('dulwich'), self.cmdcls)
 
+    # the following two tests mostly here for coverage purposes.
+    # as they don't connect to real repositories.
+
+    def test_push_url_with_creds(self):
+        workspace = CmdWorkspace(self.workspace_dir, self.cmd)
+        _, _, code = self.cmd.push(
+            workspace, username='username', password='password')
+        self.assertEqual(code, 1)
+
+    def test_pull_url_with_creds(self):
+        workspace = CmdWorkspace(self.workspace_dir, self.cmd)
+        _, _, code = self.cmd.pull(
+            workspace, username='username', password='password')
+        self.assertEqual(code, 1)
+
 
 @skipIf(not AuthenticatedGitDvcsCmd.available(), 'git is not available')
 class AuthenticatedGitDvcsCmdTestCase(GitDvcsCmdTestCase):

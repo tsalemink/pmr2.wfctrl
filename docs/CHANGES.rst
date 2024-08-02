@@ -4,8 +4,8 @@ Changelog
 0.7.0 - 2024-08-02
 ------------------
 
-- Provide subclasses of workspaces that allow credentials be provided
-  for accessing private workspaces.
+- Provide subclasses of existing commmands that allow credentials be
+  provided for accessing private workspaces.
 
 0.6.0 - 2023-10-17
 ------------------
